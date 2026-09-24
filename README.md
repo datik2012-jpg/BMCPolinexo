@@ -2,6 +2,14 @@
 
 Local Hebrew RTL insurance portfolio review for one employee. Import a Har HaBituach XLSX, inspect grouped policies, temporarily correct coverage fields, exclude or restore entries, and compare with the original source. Monthly and annual premiums remain separate. This pilot has no accounts or database.
 
+First product version: [v1.0.0](https://github.com/datik2012-jpg/BMCPolinexo/tree/v1.0.0), published on 2026-09-24. See [STATUS.md](STATUS.md) for verification and handoff notes.
+
+## Policy display and corrections
+
+The header uses the BMSelect logo. Policy cards show a matching insurer logo at the top-right. The local catalog covers 26 insurers and insurance brands, including names absent from the current workbook; Hebrew and English aliases affect display only, not policy grouping. Unknown names remain visible without a guessed logo. See [logo sources and maintenance](docs/INSURER_LOGOS.md).
+
+To display additional coverage details, choose **עריכה**, enter text in **פרטים נוספים**, then choose **שמירת תיקונים**. The saved text appears under **בדיקה ומקור** in the expanded coverage row. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
+
 ## Docker Desktop
 
 Install Docker Desktop with Linux containers, then run from the repository root:
@@ -68,6 +76,12 @@ when testing against a native development server. Set `BMC_URL` to override the
 default `http://127.0.0.1:8080`. A synthetic-data screenshot is written to the
 ignored `test-results` folder. No uploaded workbook is saved.
 
+To check all 26 logos and RTL policy-card layout at desktop and narrow widths against the default Docker address:
+
+```powershell
+.\.venv\Scripts\python tests/insurer_logos_check.py
+```
+
 ## Data handling and limits
 
 Uploads and portfolios exist only in process/browser memory. There is no browser storage, saved upload, database, analytics, or request-content logging. Nginx access/error logs are disabled, proxy buffering is disabled, and its temporary filesystem is RAM-backed. API access logging is disabled. Both containers have read-only root filesystems and no persistent data volumes. Build contexts use an explicit allowlist; real workbooks, screenshots, and source prompts are excluded.
@@ -77,3 +91,5 @@ The entire multipart request is limited to 5 MiB, so the workbook must be slight
 The pilot trusts the local operating-system account and local machine. It is not intended for shared/network deployment. Use an appropriately secured workstation; memory-only application handling does not control operating-system swap or crash dumps. Never commit client files, put raw spreadsheet values into debug output, or enable analytics/request-body tracing. Client summaries, recommendations, notes, policy actions, and manual entry creation are outside this version.
 
 See `CONTRACT.md` for the import API and field conventions and `AGENTS.md` for durable project decisions.
+
+The initial Git publication was reviewed for client data and credentials. Real workbooks, screenshots, source prompts, environment files, caches, and test artifacts are excluded from Git. Committed raster logos have personal/text metadata removed. Keep these exclusions in place when adding files.
