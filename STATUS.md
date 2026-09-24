@@ -6,6 +6,16 @@ First product version: `v1.0.0`, commit `528f7bd`, on branch `main`.
 
 ## Verified
 
+Latest family-workspace update (after the `v1.0.0` snapshot): one initial customer
+card, required name/ID/gender before upload (other details optional), age at last birthday, additional
+family members, independent reports displayed directly below each customer form. Adding a customer appends a new section after the previous customer’s full portfolio. All 23 frontend
+tests and the production/Docker build passed. `tests/family_check.py` verified
+upload gating, duplicate/mismatched IDs, separate corrections and replacement,
+responsive forms, no browser storage, and refresh/restart clearing with synthetic data.
+The updated `tests/browser_check.py` also passed the full existing workflow,
+including editing, exclusions/restoration, comparison, filtering, RTL/mobile,
+offline locking, refresh and simulated restart detection.
+
 - Backend: 17 tests passed (`..\.venv\Scripts\python -m pytest -q` from `backend`).
 - Frontend: 19 tests passed (`npm test` from `frontend`).
 - Production TypeScript/Vite build passed, including the final Docker build.

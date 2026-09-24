@@ -10,6 +10,7 @@ from pathlib import Path
 import sys
 
 from playwright.sync_api import sync_playwright, expect
+from customer_helpers import fill_customer
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
@@ -27,10 +28,11 @@ def run():
         failures = []
         page.on('pageerror', lambda error: failures.append(str(error)))
         page.goto(os.environ.get('BMC_URL', 'http://127.0.0.1:8080'))
-        upload = page.get_by_label('בחירת קובץ Excel', exact=True)
-        expect(upload).to_be_enabled(timeout=15000)
+        upload = page.get_by_label('העלאת קובץ Excel הר ביטוח', exact=True)
+        expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
 
         def import_sample():
+            fill_customer(page.locator('.customer-card').first)
             upload.set_input_files({'name': 'synthetic.xlsx', 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'buffer': payload})
             expect(page.locator('.policy')).to_have_count(8)
             expect(page.locator('.totals').first).to_contain_text('763.32')
@@ -85,7 +87,7 @@ def run():
         output.mkdir(exist_ok=True)
         page.screenshot(path=str(output / 'portfolio.png'), full_page=True)
         page.reload()
-        expect(upload).to_be_enabled(timeout=15000)
+        expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
         expect(page.locator('.policy')).to_have_count(0)
         import_sample()
         page.route('**/api/instance', lambda route: route.abort())
@@ -99,11 +101,11 @@ def run():
         if os.environ.get('BMC_TEST_DOCKER_RESTART') == '1':
             page.unroute('**/api/instance')
             page.reload()
-            expect(upload).to_be_enabled(timeout=15000)
+            expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
             import_sample()
             subprocess.run(['docker', 'compose', 'restart', 'api'], cwd=ROOT, check=True, timeout=60)
             expect(page.locator('.policy')).to_have_count(0, timeout=30000)
-            expect(upload).to_be_enabled(timeout=30000)
+            expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=30000)
             expect(page.get_by_role('status')).to_contain_text('השרת הופעל מחדש')
             print('PASS: actual Docker API restart clears the open portfolio')
         assert not failures, failures

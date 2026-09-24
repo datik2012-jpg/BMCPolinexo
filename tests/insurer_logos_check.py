@@ -2,6 +2,7 @@
 import re
 from browser_check import ROOT, fixture_module
 from playwright.sync_api import sync_playwright, expect
+from customer_helpers import fill_customer
 
 brands = re.findall(r'brand\("([^"]+)", "([^"]+)", "([^"]+)"', (ROOT / 'frontend/src/insurers.ts').read_text(encoding='utf-8'))
 rows = [fixture_module.row(insurer=name, policy_number=f'LOGO-{key}') for key, name, _ in brands]
@@ -13,8 +14,9 @@ with sync_playwright() as p:
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.goto('http://127.0.0.1:8080')
-    upload = page.get_by_label('בחירת קובץ Excel', exact=True)
-    expect(upload).to_be_enabled(timeout=15000)
+    upload = page.get_by_label('העלאת קובץ Excel הר ביטוח', exact=True)
+    expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
+    fill_customer(page.locator('.customer-card').first)
     upload.set_input_files({'name': 'synthetic-logos.xlsx', 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'buffer': payload})
     expect(page.locator('.policy')).to_have_count(len(rows))
     expect(page.locator('.insurer-logo img')).to_have_count(len(brands))

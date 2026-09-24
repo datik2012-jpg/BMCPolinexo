@@ -6,6 +6,10 @@ First product version: [v1.0.0](https://github.com/datik2012-jpg/BMCPolinexo/tre
 
 ## Policy display and corrections
 
+The workspace starts with one customer card. First name, last name, a nine-digit ID and gender are required to enable Excel upload. Relationship, birth date and smoking status are optional; a supplied birth date must be valid. Insurance age is calculated at the last birthday. Use **הוסף לקוח נוסף** for a spouse, child or another family member. Each customer section contains its form followed immediately by its own totals and portfolio. **הוסף לקוח נוסף** appends a new section below all existing customer data. Existing portfolios remain visible, and each customer has independent filters, edits and source reconciliation.
+
+The imported ID must match the customer's ID (allowing leading zeros lost by Excel). Duplicate customer IDs are blocked. An unsuccessful upload preserves the previous portfolio; a successful replacement replaces only that customer's report and corrections. The ID is read-only once a report is attached. Removing a customer with a report requires confirmation. Refresh or server restart clears all customer details and portfolios. The one-insured-person import limit applies separately to each workbook.
+
 The header uses the BMSelect logo. Policy cards show a matching insurer logo at the top-right. The local catalog covers 26 insurers and insurance brands, including names absent from the current workbook; Hebrew and English aliases affect display only, not policy grouping. Unknown names remain visible without a guessed logo. See [logo sources and maintenance](docs/INSURER_LOGOS.md).
 
 To display additional coverage details, choose **עריכה**, enter text in **פרטים נוספים**, then choose **שמירת תיקונים**. The saved text appears under **בדיקה ומקור** in the expanded coverage row. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
@@ -80,6 +84,7 @@ To check all 26 logos and RTL policy-card layout at desktop and narrow widths ag
 
 ```powershell
 .\.venv\Scripts\python tests/insurer_logos_check.py
+.\.venv\Scripts\python tests/family_check.py
 ```
 
 ## Data handling and limits
