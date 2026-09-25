@@ -169,7 +169,7 @@ export default function App() {
         )}
         <fieldset disabled={!available || busy} className="workspace">
           <section className="customers" aria-label="לקוחות המשפחה">
-            {customers.map(customer => <section className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
+            {customers.map(customer => <div key={customer.id}>
               <CustomerForm customer={customer} disabled={!available || busy}
                 duplicate={customers.some(c => c.id !== customer.id && sameIdentity(c.details.identity, customer.details.identity))}
                 onChange={details => setCustomers(all => all.map(c => c.id === customer.id ? { ...c, details } : c))}
@@ -181,14 +181,18 @@ export default function App() {
                   });
                 }}
                 onUpload={file => void upload(customer, file)} />
+              {customer.id === customers[0].id && <div className="add-customer-row">
+                <button type="button" onClick={() => setCustomers(all => [all[0], newCustomer(), ...all.slice(1)])}>+ הוסף לקוח נוסף</button>
+                <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
+              </div>}
+            </div>)}
+            {customers.map(customer => <section className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
               <CustomerPortfolio customer={customer} available={available && !busy}
                 key={`${customer.id}-${customer.revision || 0}`}
                 setReport={value => setCustomers(all => all.map(c => c.id === customer.id ? {
                   ...c, report: typeof value === 'function' ? value(c.report) : value,
                 } : c))} />
             </section>)}
-            <button type="button" onClick={() => setCustomers(all => [...all, newCustomer()])}>+ הוסף לקוח נוסף</button>
-            <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
           </section>
           {busy && <p role="status">הקובץ בעיבוד…</p>}
         </fieldset>

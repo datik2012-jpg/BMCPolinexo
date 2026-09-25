@@ -32,7 +32,10 @@ with sync_playwright() as p:
     expect(sections.first.locator('.policy')).to_have_count(1)
     expect(sections.first.locator('.policy')).to_have_attribute('open', '')
     expect(sections.nth(1).locator('.policy')).to_have_count(0)
-    assert sections.nth(1).bounding_box()['y'] > sections.first.locator('.policy').bounding_box()['y']
+    add_button = page.get_by_role('button', name='+ הוסף לקוח נוסף', exact=True).bounding_box()
+    new_form = cards.nth(1).bounding_box()
+    assert new_form['y'] >= add_button['y'] + add_button['height']
+    assert new_form['y'] + new_form['height'] <= sections.first.bounding_box()['y']
     fill_customer(cards.nth(1), '999999999')
     expect(cards.nth(1).get_by_label('העלאת קובץ Excel הר ביטוח', exact=True)).to_be_disabled()
     cards.nth(1).get_by_label('תעודת זהות', exact=True).fill('888888888')
@@ -52,6 +55,14 @@ with sync_playwright() as p:
     expect(sections.first.locator('.source-row')).to_have_count(1)
     expect(sections.nth(1).locator('.policy')).to_have_count(1)
     sections.first.get_by_role('button', name='חזרה לפוליסות', exact=True).click()
+    page.get_by_role('button', name='+ הוסף לקוח נוסף', exact=True).click()
+    expect(cards).to_have_count(3)
+    expect(cards.nth(1).get_by_label('שם פרטי', exact=True)).to_have_value('')
+    expect(cards.nth(2).get_by_label('תעודת זהות', exact=True)).to_have_value('888888888')
+    expect(sections.nth(2).locator('.totals').first).to_contain_text('30.00')
+    assert cards.nth(1).bounding_box()['y'] < cards.nth(2).bounding_box()['y']
+    cards.nth(1).get_by_role('button', name='הסרת לקוח', exact=True).click()
+    expect(cards).to_have_count(2)
     for width in [1440, 768, 390, 320]:
         page.set_viewport_size({'width': width, 'height': 1000})
         assert cards.evaluate_all('(cards) => cards.every(c => c.scrollWidth <= c.clientWidth + 1)'), f'Customer overflow at {width}'

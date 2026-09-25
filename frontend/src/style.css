@@ -219,7 +219,9 @@ main {
 }
 .customers { margin: 24px 0 32px; }
 .customer-section { margin-bottom: 32px; padding-bottom: 28px; border-bottom: 2px solid #dbe5e6; }
-.customers > small { display: inline-block; margin: 10px; }
+.add-customer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-inline: 23px; margin-bottom: 24px; }
+.add-customer-row button { flex-shrink: 0; }
+@media (max-width: 480px) { .add-customer-row { padding-inline: 17px; } }
 .customer-card { background: white; border: 1px solid #dbe5e6; border-radius: 14px; padding: 22px; margin-bottom: 16px; }
 .customer-selected { border-color: #368c80; box-shadow: 0 0 0 1px #368c8022; }
 .customer-heading { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
@@ -232,6 +234,7 @@ main {
 .customer-fields small { font-weight: 400; color: #71858a; }
 .customer-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 20px; }
 .customer-upload .upload-button { margin: 0; white-space: normal; }
+.upload-success { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #b6d8c6; border-radius: 8px; background: #edf8f1; color: #21613e; font-size: 13px; font-weight: 600; }
 .upload-disabled { opacity: .5; cursor: not-allowed; }
 @media (max-width: 850px) { .customer-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .customer-fields { grid-template-columns: 1fr; } .customer-card { padding: 16px; } }
@@ -322,6 +325,12 @@ main {
   font-size: 12px;
   color: #647b7e;
 }
+.category-filter { flex: 1; min-width: 150px; font-size: 12px; color: #647b7e; }
+.category-filter details { position: relative; margin-top: 5px; }
+.category-filter summary { min-height: 42px; padding: 9px 11px; border: 1px solid #cddadc; border-radius: 8px; background: white; color: #29494e; cursor: pointer; }
+.category-options { position: absolute; inset-inline: 0; top: calc(100% + 4px); z-index: 10; max-height: 280px; overflow-y: auto; padding: 8px; border: 1px solid #cddadc; border-radius: 8px; background: white; box-shadow: 0 6px 18px #173d4226; }
+.filters .category-options label { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 7px 4px; color: #29494e; cursor: pointer; }
+.category-options input[type="checkbox"] { width: 18px; height: 18px; min-height: 18px; margin: 0; padding: 0; flex-shrink: 0; accent-color: #368c80; }
 select,
 input {
   width: 100%;

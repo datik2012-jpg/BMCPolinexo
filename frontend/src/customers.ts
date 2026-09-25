@@ -7,12 +7,13 @@ export type CustomerDetails = {
   identity: string;
   birthDate: string;
   gender: string;
+  maritalStatus: string;
   smoking: string;
 };
 export type Customer = { id: string; details: CustomerDetails; report: Report | null; revision?: number };
 export function newCustomer(relationship = ''): Customer {
   return { id: crypto.randomUUID(), report: null, details: {
-    relationship, firstName: '', lastName: '', identity: '', birthDate: '', gender: '', smoking: '',
+    relationship, firstName: '', lastName: '', identity: '', birthDate: '', gender: '', maritalStatus: '', smoking: '',
   } };
 }
 export function validBirthDate(value: string, today = new Date()): boolean {
@@ -24,7 +25,7 @@ export function validBirthDate(value: string, today = new Date()): boolean {
     date.getDate() === Number(value.slice(8, 10)) && date <= today;
 }
 export function customerReady(d: CustomerDetails): boolean {
-  return Boolean(d.firstName.trim() && d.lastName.trim() && d.gender.trim()) &&
+  return Boolean(d.firstName.trim() && d.lastName.trim() && d.gender.trim() && d.maritalStatus.trim()) &&
     /^\d{9}$/.test(d.identity) && (!d.birthDate || validBirthDate(d.birthDate));
 }
 export function insuranceAge(birthDate: string, today = new Date()): number | null {

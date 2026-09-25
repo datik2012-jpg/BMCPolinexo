@@ -61,7 +61,8 @@ export function CustomerPortfolio({ customer, available, setReport }: {
   const [draft, setDraft] = useState<Fields | null>(null);
   const [source, setSource] = useState(false);
   const [sourceFocus, setSourceFocus] = useState<string | null>(null);
-  const [filters, setFilters] = useState({ category: '', insurer: '', frequency: '', review: '' });
+  const [filters, setFilters] = useState({ insurer: '', frequency: '', review: '' });
+  const [categorySelection, setCategorySelection] = useState<Record<string, boolean>>({});
   const editButton = useRef<HTMLElement | null>(null);
   const panel = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -96,9 +97,13 @@ export function CustomerPortfolio({ customer, available, setReport }: {
     };
   }, [edit]);
   const entries = report?.entries || [];
+  const categories = [...new Set(entries.map(e => e.values.category))];
+  const categoryChecked = (category: string) => categorySelection[category] ??
+    !['ביטוח רכב', 'ביטוח סיעודי'].includes(category.trim());
+  const selectedCategoryCount = categories.filter(categoryChecked).length;
   const filtered = entries.filter(
     (e) =>
-      (!filters.category || e.values.category === filters.category) &&
+      categoryChecked(e.values.category) &&
       (!filters.insurer || e.values.insurer === filters.insurer) &&
       (!filters.frequency ||
         frequency(e.values.frequency) === filters.frequency) &&
@@ -110,7 +115,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
   const flagged = entries.filter(
     (e) => !e.excluded && issues(e, entries).length,
   ).length;
-  const activeFilters = Object.values(filters).some(Boolean);
+  const activeFilters = Object.values(filters).some(Boolean) || selectedCategoryCount < categories.length;
   function update(entry: Entry) {
     setReport((r) =>
       r
@@ -166,23 +171,27 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                 </div>
               )}
               <div className="filters">
-                <label>
-                  ענף ביטוח
-                  <select
-                    aria-label="ענף ביטוח"
-                    value={filters.category}
-                    onChange={(e) =>
-                      setFilters({ ...filters, category: e.target.value })
+                <div className="category-filter">
+                  <span>ענף ביטוח</span>
+                  <details onKeyDown={e => {
+                    if (e.key === 'Escape') {
+                      e.currentTarget.open = false;
+                      e.currentTarget.querySelector('summary')?.focus();
                     }
-                  >
-                    <option value="">כל הענפים</option>
-                    {[...new Set(entries.map((e) => e.values.category))]
-                      .filter(Boolean)
-                      .map((v) => (
-                        <option key={v}>{v}</option>
-                      ))}
-                  </select>
-                </label>
+                  }}>
+                    <summary aria-label="ענף ביטוח">
+                      {selectedCategoryCount === categories.length ? 'כל הענפים' :
+                        selectedCategoryCount === 0 ? 'לא נבחרו ענפים' : `${selectedCategoryCount} מתוך ${categories.length} ענפים`}
+                    </summary>
+                    <div className="category-options" role="group" aria-label="בחירת ענפי ביטוח">
+                      {categories.map(category => <label key={category}>
+                        <input type="checkbox" checked={categoryChecked(category)}
+                          onChange={e => setCategorySelection(previous => ({ ...previous, [category]: e.target.checked }))} />
+                        {category || 'ללא ענף ביטוח'}
+                      </label>)}
+                    </div>
+                  </details>
+                </div>
                 <label>
                   חברת ביטוח
                   <select
@@ -231,14 +240,14 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                 </label>
                 {activeFilters && (
                   <button
-                    onClick={() =>
+                    onClick={() => {
+                      setCategorySelection(Object.fromEntries(categories.map(category => [category, true])));
                       setFilters({
-                        category: "",
                         insurer: "",
                         frequency: "",
                         review: "",
-                      })
-                    }
+                      });
+                    }}
                   >
                     ניקוי סינון
                   </button>
@@ -371,11 +380,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                                 : <Value value={first.period || "תקופה לא ידועה"} />}
                             </small>
                             <small>
-                              {rows.length} כיסויים
-                              {rows.some(
-                                (e) =>
-                                  !e.excluded && issues(e, entries).length > 0,
-                              ) && " · נדרשת בדיקה"}
+                              כמות כיסויים: {rows.length}
                             </small>
                           </div>
                           <div className="policy-amount">

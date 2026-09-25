@@ -15,7 +15,8 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
       onChange={e => onChange({ ...d, [key]: e.target.value })} /></label>;
   }
   function select(key: keyof CustomerDetails, label: string, options: string[]) {
-    return <label>{label}{key === 'gender' ? ' *' : ' (רשות)'}<select aria-label={label} value={d[key]} required={key === 'gender'} onChange={e => onChange({ ...d, [key]: e.target.value })}>
+    const required = key === 'gender' || key === 'maritalStatus';
+    return <label>{label}{required ? ' *' : ' (רשות)'}<select aria-label={label} value={d[key]} required={required} onChange={e => onChange({ ...d, [key]: e.target.value })}>
       <option value="">בחירה</option>{options.map(v => <option key={v}>{v}</option>)}
     </select></label>;
   }
@@ -34,6 +35,7 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
         <label>גיל ביטוחי<input aria-label="גיל ביטוחי" readOnly value={insuranceAge(d.birthDate) ?? ''} placeholder="—" /><small>לפי יום ההולדת האחרון</small></label>
         {select('gender', 'מין', ['זכר', 'נקבה', 'אחר'])}
         {select('smoking', 'עישון', ['לא מעשן/ת', 'מעשן/ת'])}
+        {select('maritalStatus', 'מצב משפחתי', ['רווק/ה', 'נשוי/אה', 'גרוש/ה', 'אלמן/ה', 'פרוד/ה', 'ידוע/ה בציבור'])}
       </div>
       {duplicate && <p className="warning">כבר קיים לקוח עם תעודת זהות זו.</p>}
       {customer.report && <p className="muted">הדוח נטען · {customer.report.entries.length} כיסויים. העלאה חדשה תחליף רק את הדוח והתיקונים של לקוח זה.</p>}
@@ -44,7 +46,10 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
           <input aria-label="העלאת קובץ Excel הר ביטוח" type="file" accept=".xlsx" disabled={!ready}
             onChange={e => { onUpload(e.target.files?.[0]); e.target.value = ''; }} />
         </label>
-        <small>{ready ? 'קובץ אחד למבוטח · עד 5 מגה־בייט' : 'חובה למלא שם פרטי, שם משפחה, תעודת זהות בת 9 ספרות ומין. תאריך לידה, אם הוזן, חייב להיות תקין.'}</small>
+        {customer.report && <span className="upload-success" role="status">
+          <span aria-hidden="true">✓</span> קובץ Excel הועלה בהצלחה
+        </span>}
+        <small>{ready ? 'קובץ אחד למבוטח · עד 5 מגה־בייט' : 'חובה למלא שם פרטי, שם משפחה, תעודת זהות בת 9 ספרות, מין ומצב משפחתי. תאריך לידה, אם הוזן, חייב להיות תקין.'}</small>
       </div>
     </fieldset>
   </section>;

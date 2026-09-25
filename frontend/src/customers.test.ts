@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { customerReady, insuranceAge, sameIdentity, validBirthDate } from './customers';
 
 describe('customer upload validation', () => {
-  const details = { relationship: 'לקוח ראשי', firstName: 'בדיקה', lastName: 'סינתטי', identity: '999999999', birthDate: '1990-09-25', gender: 'זכר', smoking: 'לא מעשן/ת' };
-  it('requires names, ID and gender while allowing empty optional fields', () => {
+  const details = { relationship: 'לקוח ראשי', firstName: 'בדיקה', lastName: 'סינתטי', identity: '999999999', birthDate: '1990-09-25', gender: 'זכר', maritalStatus: 'נשוי/אה', smoking: 'לא מעשן/ת' };
+  it('requires names, ID, gender and marital status while allowing empty optional fields', () => {
     expect(customerReady(details)).toBe(true);
-    for (const key of ['firstName', 'lastName', 'identity', 'gender']) expect(customerReady({ ...details, [key]: '' })).toBe(false);
+    for (const key of ['firstName', 'lastName', 'identity', 'gender', 'maritalStatus']) expect(customerReady({ ...details, [key]: '' })).toBe(false);
+    expect(customerReady({ ...details, maritalStatus: '   ' })).toBe(false);
     expect(customerReady({ ...details, relationship: '', birthDate: '', smoking: '' })).toBe(true);
     expect(customerReady({ ...details, birthDate: '2999-01-01' })).toBe(false);
     expect(customerReady({ ...details, identity: '12x' })).toBe(false);
