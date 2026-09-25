@@ -1,13 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import { CustomerForm } from './CustomerForm';
 import { CustomerPortfolio } from './CustomerPortfolio';
+import { SharedPortfolio } from './SharedPortfolio';
 import { Customer, customerReady, newCustomer, sameIdentity } from './customers';
 import { Report } from './domain';
 
 export default function App() {
   const [customers, setCustomers] = useState<Customer[]>(() => [newCustomer('לקוח ראשי')]);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
+  const [sharedCustomers, setSharedCustomers] = useState<string[]>([]);
+  const eligible = customers.filter(c => c.report);
+  const selected = eligible.filter(c => selectedCustomers.includes(c.id));
+  const shared = eligible.filter(c => sharedCustomers.includes(c.id));
+  const showShared = shared.length >= 2;
+  const selectionIsShown = showShared && selected.length === shared.length && selected.every(c => sharedCustomers.includes(c.id));
   function clearCustomers() {
     setCustomers([newCustomer('לקוח ראשי')]);
+    setSelectedCustomers([]);
+    setSharedCustomers([]);
     setError('');
   }
   const [available, setAvailable] = useState(false),
@@ -169,12 +179,32 @@ export default function App() {
         )}
         <fieldset disabled={!available || busy} className="workspace">
           <section className="customers" aria-label="לקוחות המשפחה">
+            {customers.length > 1 && <section className="shared-selection" aria-label="בחירת לקוחות לתצוגה משותפת">
+              <h2>הצגת לקוחות יחד</h2>
+              <p className="muted">בחרו לפחות שני לקוחות עם דוח. פוליסות עם אותה חברה ואותו מספר יוצגו יחד; הסכומים יישארו נפרדים לכל לקוח.</p>
+              <div className="shared-customer-options">
+                {customers.map((c, index) => <label key={c.id}>
+                  <input type="checkbox" disabled={!c.report} checked={selectedCustomers.includes(c.id)}
+                    onChange={event => setSelectedCustomers(ids => event.target.checked ? [...ids, c.id] : ids.filter(id => id !== c.id))} />
+                  <span>{[c.details.firstName, c.details.lastName].filter(Boolean).join(' ') || `לקוח ${index + 1}`}{!c.report && ' · יש להעלות דוח'}</span>
+                </label>)}
+              </div>
+              {showShared && <p role="status" className="shared-active-indicator">
+                <strong>✓ תצוגה משותפת פעילה · {shared.length} לקוחות</strong>
+                <span>{shared.map(c => `${c.details.firstName} ${c.details.lastName}`.trim()).join(' · ')}</span>
+                {!selectionIsShown && <small>הבחירה השתנתה. לחצו על הצגת הלקוחות יחד כדי לעדכן את התצוגה.</small>}
+              </p>}
+              <button type="button" className={selectionIsShown ? 'shared-view-active' : ''} aria-pressed={selectionIsShown} disabled={selected.length < 2} onClick={() => setSharedCustomers(selected.map(c => c.id))}>הצגת הלקוחות יחד · {selected.length}</button>
+              {showShared && <button type="button" onClick={() => setSharedCustomers([])}>חזרה לתצוגה נפרדת</button>}
+            </section>}
             {customers.map(customer => <div key={customer.id}>
               <CustomerForm customer={customer} disabled={!available || busy}
                 duplicate={customers.some(c => c.id !== customer.id && sameIdentity(c.details.identity, customer.details.identity))}
                 onChange={details => setCustomers(all => all.map(c => c.id === customer.id ? { ...c, details } : c))}
                 onRemove={() => {
                   if (customer.report && !window.confirm('להסיר את הלקוח ואת הדוח והתיקונים שלו?')) return;
+                  setSelectedCustomers(ids => ids.filter(id => id !== customer.id));
+                  setSharedCustomers(ids => ids.filter(id => id !== customer.id));
                   setCustomers(all => {
                     const remaining = all.filter(c => c.id !== customer.id);
                     return remaining.length ? remaining : [newCustomer('לקוח ראשי')];
@@ -186,7 +216,11 @@ export default function App() {
                 <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
               </div>}
             </div>)}
-            {customers.map(customer => <section className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
+            {showShared && <section className="shared-portfolio" aria-label="תיקי הביטוח בתצוגה משותפת">
+              <SharedPortfolio key={shared.map(c => `${c.id}-${c.revision || 0}`).join('|')}
+                customers={shared} available={available && !busy} setCustomers={setCustomers} />
+            </section>}
+            {customers.map(customer => <section hidden={showShared} className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
               <CustomerPortfolio customer={customer} available={available && !busy}
                 key={`${customer.id}-${customer.revision || 0}`}
                 setReport={value => setCustomers(all => all.map(c => c.id === customer.id ? {

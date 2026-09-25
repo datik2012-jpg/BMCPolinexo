@@ -218,6 +218,18 @@ main {
   flex-shrink: 0;
 }
 .customers { margin: 24px 0 32px; }
+.shared-selection { background: white; border: 1px solid #dbe5e6; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
+.shared-selection button { margin-inline-end: 10px; margin-top: 12px; }
+.shared-active-indicator { display: flex; flex-direction: column; gap: 5px; padding: 12px 16px; margin: 16px 0 0; background: #edf8f1; color: #21613e; border: 1px solid #b6d8c6; border-inline-start: 4px solid #368c80; border-radius: 8px; overflow-wrap: anywhere; }
+.shared-selection .shared-view-active { background: #216b60; border-color: #216b60; color: white; }
+.shared-customer-options { display: flex; flex-wrap: wrap; gap: 16px; }
+.shared-customer-options label { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.shared-customer-options input { width: 18px; min-height: 18px; flex-shrink: 0; accent-color: #368c80; }
+.shared-policy-totals { min-width: 0; overflow-wrap: anywhere; }
+.shared-policy-totals > div + div { margin-top: 8px; }
+.shared-policy-totals small { display: block; color: #71858a; }
+.shared-monthly-total { display: flex; flex-direction: column; gap: 4px; border-top: 1px solid #b6d8c6; padding-top: 10px; color: #21613e; }
+.shared-monthly-total > bdi { font-size: 18px; font-weight: 700; }
 .customer-section { margin-bottom: 32px; padding-bottom: 28px; border-bottom: 2px solid #dbe5e6; }
 .add-customer-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-inline: 23px; margin-bottom: 24px; }
 .add-customer-row button { flex-shrink: 0; }

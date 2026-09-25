@@ -52,11 +52,20 @@ function Totals({
     </section>
   );
 }
-export function CustomerPortfolio({ customer, available, setReport }: {
+export function CustomerPortfolio({ customer, available, setReport, members, ownerOf }: {
   customer: Customer; available: boolean;
+  members?: Customer[]; ownerOf?: (entry: Entry) => Customer;
   setReport: (value: Report | null | ((r: Report | null) => Report | null)) => void;
 }) {
   const report = customer.report;
+  const nameOf = (c: Customer) => [c.details.firstName, c.details.lastName].filter(Boolean).join(' ');
+  const entryName = (e: Entry) => nameOf(ownerOf ? ownerOf(e) : customer);
+  function portfolioTotals(rows: Entry[], title: string, original = false) {
+    return members ? members.map(member => <Totals key={member.id}
+      entries={rows.filter(e => ownerOf?.(e).id === member.id)}
+      title={`${nameOf(member)} · ${title}`} original={original} />)
+      : <Totals entries={rows} title={title} original={original} />;
+  }
   const [edit, setEdit] = useState<Entry | null>(null);
   const [draft, setDraft] = useState<Fields | null>(null);
   const [source, setSource] = useState(false);
@@ -136,9 +145,9 @@ export function CustomerPortfolio({ customer, available, setReport }: {
             <>
               <div className="section-heading">
                 <div>
-                  <h2>תיק הביטוח — {customer.details.firstName} {customer.details.lastName}</h2>
+                  <h2>{members ? 'תצוגה משותפת' : 'תיק הביטוח'} — {members ? members.map(nameOf).join(' · ') : nameOf(customer)}</h2>
                   <p className="muted">
-                    {groups(entries).length} פוליסות · {entries.length} כיסויים{" "}
+                    {groups(entries, !!members).length} פוליסות · {entries.length} כיסויים{" "}
                     {report.report_date && (
                       <>
                         · תאריך הדוח <Value value={report.report_date} />
@@ -153,7 +162,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                   {source ? "חזרה לפוליסות" : "השוואה למקור"}
                 </button>
               </div>
-              <Totals entries={entries} title="כל התיק · אחרי תיקונים" />
+              {portfolioTotals(entries, "כל התיק · אחרי תיקונים")}
               {(flagged > 0 || report.warnings.length > 0) && (
                 <div className="review-banner">
                   <strong>
@@ -254,7 +263,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                 )}
               </div>
               {activeFilters && (
-                <Totals entries={filtered} title="תוצאות הסינון בלבד" />
+                portfolioTotals(filtered, "תוצאות הסינון בלבד")
               )}
               {source ? (
                 <>
@@ -265,12 +274,8 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                       המצטברת של התיקונים וההחרגות.
                     </p>
                   </div>
-                  <Totals
-                    entries={entries}
-                    original
-                    title="כל התיק · ערכי המקור"
-                  />
-                  <div className="delta">
+                  {portfolioTotals(entries, "כל התיק · ערכי המקור", true)}
+                  {!members && <div className="delta">
                     שינוי מול המקור (כל התיק): חודשי{" "}
                     <bdi>
                       {money(
@@ -290,7 +295,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                     {(totals(entries).incomplete ||
                       totals(entries, true).incomplete) &&
                       " · ההשוואה חלקית עד להשלמת הפרטים החסרים"}
-                  </div>
+                  </div>}
                   {filtered.map((e) => (
                     <details
                       className="source-row"
@@ -299,6 +304,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                     >
                       <summary>
                         <span>
+                          {members && <><bdi>{entryName(e)}</bdi> · </>}
                           שורה <bdi>{e.source_row}</bdi> ·{" "}
                           <Value value={e.source_sheet} /> ·{" "}
                           <Value value={e.values.product_type} />
@@ -347,7 +353,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                 </>
               ) : (
                 <div className="policies">
-                  {groups(filtered).map(([key, rows]) => {
+                  {groups(filtered, !!members).map(([key, rows]) => {
                     const first = rows[0].values,
                       t = totals(rows);
                     return (
@@ -388,13 +394,25 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                               <strong>פרטים נוספים</strong>
                               {rows.filter(e => e.values.additional_details.trim()).map(e => (
                                 <div key={e.id}>
-                                  <small>{e.values.subcategory || e.values.product_type || 'כיסוי'} · שורה {e.source_row}{e.excluded ? ' · הוחרג מהחישוב' : ''}</small>
+                                  <small>{members && <><bdi>{entryName(e)}</bdi> · </>}{e.values.subcategory || e.values.product_type || 'כיסוי'} · שורה {e.source_row}{e.excluded ? ' · הוחרג מהחישוב' : ''}</small>
                                   <div dir="auto">{e.values.additional_details}</div>
                                 </div>
                               ))}
                             </div>
                           )}
-                          <div className="policy-amount">
+                          {members ? <div className="shared-policy-totals">
+                            {members.filter(member => rows.some(e => ownerOf?.(e).id === member.id)).map(member => {
+                              const amounts = totals(rows.filter(e => ownerOf?.(e).id === member.id));
+                              return <div key={member.id}><strong>{nameOf(member)}</strong>
+                                <small>חודשי <bdi>{money(amounts.monthly)}</bdi> · שנתי <bdi>{money(amounts.annual)}</bdi>{amounts.incomplete && ' · חלקי'}</small>
+                              </div>;
+                            })}
+                            <div className="shared-monthly-total">
+                              <strong>סה״כ חודשי ללקוחות המוצגים</strong>
+                              <bdi>{money(t.monthly)}</bdi>
+                              {t.monthlyIncomplete && <small className="warning">סכום חלקי — נדרש בירור</small>}
+                            </div>
+                          </div> : <><div className="policy-amount">
                             <small>חודשי</small>
                             <bdi>{money(t.monthly)}</bdi>
                           </div>
@@ -402,7 +420,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                             <small>שנתי</small>
                             <bdi>{money(t.annual)}</bdi>
                           </div>
-                          {t.incomplete && <span className="badge">חלקי</span>}
+                          {t.incomplete && <span className="badge">חלקי</span>}</>}
                         </summary>
                         <div className="table-scroll">
                           <table>
@@ -431,7 +449,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                                     </small>
                                   </td>
                                   <td>
-                                    <bdi>{[customer.details.firstName, customer.details.lastName].filter(Boolean).join(' ')}</bdi>
+                                    <bdi>{entryName(e)}</bdi>
                                   </td>
                                   <td>
                                     <Value value={e.values.period} />
@@ -509,7 +527,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
             <div className="section-heading">
               <div>
                 <p className="eyebrow">תיקון זמני · שורה {edit.source_row}</p>
-                <h2 id={`edit-heading-${customer.id}`}>עריכת הכיסוי</h2>
+                <h2 id={`edit-heading-${customer.id}`}>עריכת הכיסוי{members && edit ? ` — ${entryName(edit)}` : ''}</h2>
               </div>
               <button
                 aria-label="סגירת העריכה"
