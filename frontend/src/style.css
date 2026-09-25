@@ -471,14 +471,17 @@ td strong {
 .actions {
   white-space: nowrap;
 }
-.coverage-details {
-  margin-top: 8px;
-  max-width: 36rem;
+.policy-details {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: #24464d;
   line-height: 1.5;
 }
+.policy-details > div { margin-top: 8px; }
+.policy-details small { display: block; color: #71858a; margin-bottom: 3px; }
 .actions button {
   font-size: 12px;
   padding: 5px 8px;
@@ -650,6 +653,9 @@ bdi {
     overflow-wrap: anywhere;
   }
   .policy-categories {
+    flex-basis: 100%;
+  }
+  .policy-details {
     flex-basis: 100%;
   }
   .policy-amount {

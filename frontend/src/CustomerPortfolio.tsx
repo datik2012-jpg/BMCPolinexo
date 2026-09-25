@@ -383,6 +383,17 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                               כמות כיסויים: {rows.length}
                             </small>
                           </div>
+                          {rows.some(e => e.values.additional_details.trim()) && (
+                            <div className="policy-details">
+                              <strong>פרטים נוספים</strong>
+                              {rows.filter(e => e.values.additional_details.trim()).map(e => (
+                                <div key={e.id}>
+                                  <small>{e.values.subcategory || e.values.product_type || 'כיסוי'} · שורה {e.source_row}{e.excluded ? ' · הוחרג מהחישוב' : ''}</small>
+                                  <div dir="auto">{e.values.additional_details}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                           <div className="policy-amount">
                             <small>חודשי</small>
                             <bdi>{money(t.monthly)}</bdi>
@@ -398,6 +409,7 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                             <thead>
                               <tr>
                                 <th>כיסוי</th>
+                                <th>שם המבוטח</th>
                                 <th>תקופת ביטוח</th>
                                 <th>פרמיה</th>
                                 <th>בדיקה ומקור</th>
@@ -417,6 +429,9 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                                     <small>
                                       <Value value={e.values.subcategory} />
                                     </small>
+                                  </td>
+                                  <td>
+                                    <bdi>{[customer.details.firstName, customer.details.lastName].filter(Boolean).join(' ')}</bdi>
                                   </td>
                                   <td>
                                     <Value value={e.values.period} />
@@ -442,12 +457,6 @@ export function CustomerPortfolio({ customer, available, setReport }: {
                                           {i}
                                         </small>
                                       ))
-                                    )}
-                                    {e.values.additional_details.trim() && (
-                                      <div className="coverage-details">
-                                        <strong>פרטים נוספים: </strong>
-                                        <span dir="auto">{e.values.additional_details}</span>
-                                      </div>
                                     )}
                                   </td>
                                   <td className="actions">
