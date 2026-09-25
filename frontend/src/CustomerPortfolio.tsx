@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { InsurerLogo } from "./InsurerLogo";
 import { Customer } from './customers';
+import { ExportButton } from './ExportButton';
 import {
   Entry,
   Fields,
@@ -161,6 +162,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                 >
                   {source ? "חזרה לפוליסות" : "השוואה למקור"}
                 </button>
+                <ExportButton customers={members || [customer]} available={available} />
               </div>
               {portfolioTotals(entries, "כל התיק · אחרי תיקונים")}
               {(flagged > 0 || report.warnings.length > 0) && (

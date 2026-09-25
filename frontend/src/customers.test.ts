@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { customerReady, insuranceAge, sameIdentity, validBirthDate } from './customers';
+import { customerReady, insuranceAge, sameIdentity, validBirthDate, displayBirthDate, parseBirthDateInput } from './customers';
+
+describe('day-first birth date input', () => {
+  it('keeps day and month unambiguous and preserves partial input', () => {
+    expect(parseBirthDateInput('05/09/1990')).toBe('1990-09-05');
+    expect(displayBirthDate('1990-09-05')).toBe('05/09/1990');
+    expect(displayBirthDate(parseBirthDateInput('05/0'))).toBe('05/0');
+    expect(parseBirthDateInput('')).toBe('');
+    expect(validBirthDate(parseBirthDateInput('31/02/1990'))).toBe(false);
+    expect(validBirthDate(parseBirthDateInput('29/02/2000'))).toBe(true);
+    expect(validBirthDate(parseBirthDateInput('29/02/2001'))).toBe(false);
+  });
+});
 
 describe('customer upload validation', () => {
   const details = { relationship: 'לקוח ראשי', firstName: 'בדיקה', lastName: 'סינתטי', identity: '999999999', birthDate: '1990-09-25', gender: 'זכר', maritalStatus: 'נשוי/אה', smoking: 'לא מעשן/ת' };

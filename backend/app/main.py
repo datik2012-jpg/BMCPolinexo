@@ -5,6 +5,9 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
+from fastapi.responses import Response
+from pydantic import ValidationError
+from .exporter import ExportRequest, create_export
 
 from .parser import ImportProblem, parse_workbook
 
@@ -22,6 +25,27 @@ async def no_cache(request, call_next):
 @app.get('/api/instance')
 async def instance():
     return {'instance_id': INSTANCE_ID}
+
+@app.post('/api/export')
+async def export_file(request: Request):
+    payload = bytearray()
+    async for chunk in request.stream():
+        if len(payload) + len(chunk) > MAX_BODY:
+            raise HTTPException(413, 'הנתונים גדולים מדי לייצוא אחד. נסו לייצא כל לקוח בנפרד.')
+        payload.extend(chunk)
+    try:
+        export = ExportRequest.model_validate_json(payload)
+    except (ValidationError, ValueError):
+        raise HTTPException(400, 'לא ניתן לייצא: הנתונים אינם תקינים או חורגים ממגבלות Excel.') from None
+    if any(c.report.instance_id != INSTANCE_ID for c in export.customers):
+        raise HTTPException(409, 'השרת השתנה. יש לטעון את התיקים מחדש לפני הייצוא.')
+    try:
+        content = await run_in_threadpool(create_export, export)
+    except ValueError:
+        raise HTTPException(400, 'טקסט ארוך מדי לייצוא לתא Excel. יש לקצר את הפרטים ולנסות שוב.') from None
+    return Response(content, media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    headers={'Content-Disposition': 'attachment; filename="insurance-portfolios.xlsx"',
+                             'X-Instance-Id': INSTANCE_ID})
 
 @app.post('/api/import')
 async def import_file(request: Request):

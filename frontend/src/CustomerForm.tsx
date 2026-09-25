@@ -1,4 +1,5 @@
-import { Customer, CustomerDetails, customerReady, insuranceAge } from './customers';
+import { Customer, CustomerDetails, customerReady, insuranceAge, displayBirthDate, parseBirthDateInput, validBirthDate } from './customers';
+import { useId, useRef } from 'react';
 
 export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove, onUpload }: {
   customer: Customer; disabled: boolean; duplicate: boolean;
@@ -6,6 +7,10 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
   onRemove: () => void; onUpload: (file?: File) => void;
 }) {
   const d = customer.details;
+  const birthDateId = useId();
+  const calendar = useRef<HTMLInputElement>(null);
+  const today = new Date();
+  const maxDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const ready = customerReady(d) && !duplicate;
   function field(key: keyof CustomerDetails, label: string, type = 'text') {
     return <label>{label}{key === 'birthDate' ? ' (רשות)' : ' *'}<input aria-label={label} type={type} value={d[key]} required={key !== 'birthDate'}
@@ -31,7 +36,30 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
         {field('firstName', 'שם פרטי')}
         {field('lastName', 'שם משפחה')}
         {field('identity', 'תעודת זהות')}
-        {field('birthDate', 'תאריך לידה', 'date')}
+        <div className="birth-date-field">
+          <label htmlFor={birthDateId}>תאריך לידה (רשות)</label>
+          <div className="birth-date-controls">
+          <input id={birthDateId} aria-label="תאריך לידה" type="text" dir="ltr"
+            placeholder="DD/MM/YYYY" maxLength={10} autoComplete="off"
+            value={displayBirthDate(d.birthDate)}
+            aria-invalid={Boolean(d.birthDate && !validBirthDate(d.birthDate))}
+            onChange={e => onChange({ ...d, birthDate: parseBirthDateInput(e.target.value) })} />
+          <div className="birth-date-calendar">
+            <button type="button" aria-label="בחירת תאריך לידה בלוח שנה" title="בחירת תאריך בלוח שנה"
+              onClick={() => {
+                if (calendar.current?.showPicker) calendar.current.showPicker();
+                else { calendar.current?.focus(); calendar.current?.click(); }
+              }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 11h18M7 15h3M14 15h3" /></svg>
+            </button>
+            <input ref={calendar} className="birth-date-native" type="date" tabIndex={-1}
+              aria-label="תאריך לידה בלוח שנה" min="1900-01-01" max={maxDate}
+              value={validBirthDate(d.birthDate) ? d.birthDate : ''}
+              onChange={e => onChange({ ...d, birthDate: e.target.value })} />
+          </div>
+          </div>
+          <small>{d.birthDate && !validBirthDate(d.birthDate) ? 'יש להזין תאריך תקין: יום/חודש/שנה' : 'יום/חודש/שנה · לדוגמה 25/09/1990'}</small>
+        </div>
         <label>גיל ביטוחי<input aria-label="גיל ביטוחי" readOnly value={insuranceAge(d.birthDate) ?? ''} placeholder="—" /><small>לפי יום ההולדת האחרון</small></label>
         {select('gender', 'מין', ['זכר', 'נקבה', 'אחר'])}
         {select('smoking', 'עישון', ['לא מעשן/ת', 'מעשן/ת'])}

@@ -97,6 +97,16 @@ Selections and shared presentation exist only in memory. Removing customers upda
 
 ## Data handling and limits
 
+### Excel export
+
+Use **ייצוא ל־Excel** beside a customer's portfolio, or in the shared view to export all displayed customers. Export includes every coverage for those customers regardless of active filters, including excluded and zero-premium rows. Each coverage's **פרטים נוספים** stays in the same row as that coverage and its customer name.
+
+The workbook contains Hebrew RTL sheets for customer details, current coverages, original/current values with source row references, and per-customer monthly and annual totals. Excluded rows are marked and omitted from current totals. Invalid amounts/frequencies remain visible and mark totals as partial. Text is stored literally, including text that starts with `=`, so notes cannot become Excel formulas. Totals use numeric monthly/annual snapshot columns and exclusion status; the exported workbook is a snapshot, not a round-trip import format.
+
+Export is generated in memory and downloaded to the agent's computer. The server does not save it. The downloaded file remains after the browser workspace clears. Export requests are limited to 5 MiB, 50 customers, and 20,000 coverages; export individual customers if the combined request is too large. Excel cell text limits are checked rather than silently truncating notes.
+
+Verification: run `.\.venv\Scripts\python tests/export_check.py` against the local app and the backend export unit tests with synthetic data.
+
 Uploads and portfolios exist only in process/browser memory. There is no browser storage, saved upload, database, analytics, or request-content logging. Nginx access/error logs are disabled, proxy buffering is disabled, and its temporary filesystem is RAM-backed. API access logging is disabled. Both containers have read-only root filesystems and no persistent data volumes. Build contexts use an explicit allowlist; real workbooks, screenshots, and source prompts are excluded.
 
 The entire multipart request is limited to 5 MiB, so the workbook must be slightly smaller. XLSX expansion is limited to 25 MiB and 2,000 ZIP members; worksheets are limited to 10,000 rows. Only one insured person and one populated coverage worksheet are supported. Unsupported or ambiguous inputs produce Hebrew messages. Unknown frequencies and invalid premiums make reconciliation incomplete; duplicate candidates remain included until explicitly excluded.

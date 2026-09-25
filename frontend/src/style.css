@@ -218,6 +218,9 @@ main {
   flex-shrink: 0;
 }
 .customers { margin: 24px 0 32px; }
+.export-control { display: flex; flex-direction: column; gap: 5px; max-width: 260px; }
+.export-control small { color: #647b7e; overflow-wrap: anywhere; }
+.section-heading { flex-wrap: wrap; }
 .shared-selection { background: white; border: 1px solid #dbe5e6; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
 .shared-selection button { margin-inline-end: 10px; margin-top: 12px; }
 .shared-active-indicator { display: flex; flex-direction: column; gap: 5px; padding: 12px 16px; margin: 16px 0 0; background: #edf8f1; color: #21613e; border: 1px solid #b6d8c6; border-inline-start: 4px solid #368c80; border-radius: 8px; overflow-wrap: anywhere; }
@@ -244,6 +247,12 @@ main {
 .customer-fields input, .customer-fields select { display: block; width: 100%; min-width: 0; margin-top: 5px; }
 .customer-fields input[readonly] { background: #f0f4f4; }
 .customer-fields small { font-weight: 400; color: #71858a; }
+.birth-date-field { min-width: 0; font-size: 13px; font-weight: 600; }
+.birth-date-field > label { display: block; }
+.birth-date-controls { display: flex; align-items: center; gap: 6px; }
+.birth-date-calendar { position: relative; flex: 0 0 42px; margin-top: 5px; }
+.birth-date-calendar button { display: flex; align-items: center; justify-content: center; width: 42px; height: 42px; padding: 8px; }
+.customer-fields .birth-date-native { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; margin: 0; pointer-events: none; }
 .customer-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 20px; }
 .customer-upload .upload-button { margin: 0; white-space: normal; }
 .upload-success { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid #b6d8c6; border-radius: 8px; background: #edf8f1; color: #21613e; font-size: 13px; font-weight: 600; }

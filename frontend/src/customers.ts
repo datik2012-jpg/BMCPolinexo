@@ -24,6 +24,14 @@ export function validBirthDate(value: string, today = new Date()): boolean {
     date.getMonth() + 1 === Number(value.slice(5, 7)) &&
     date.getDate() === Number(value.slice(8, 10)) && date <= today;
 }
+export function displayBirthDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value;
+}
+export function parseBirthDateInput(value: string): string {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+  return match ? `${match[3]}-${match[2]}-${match[1]}` : value;
+}
 export function customerReady(d: CustomerDetails): boolean {
   return Boolean(d.firstName.trim() && d.lastName.trim() && d.gender.trim() && d.maritalStatus.trim()) &&
     /^\d{9}$/.test(d.identity) && (!d.birthDate || validBirthDate(d.birthDate));
