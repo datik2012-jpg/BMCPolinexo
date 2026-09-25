@@ -87,6 +87,14 @@ To check all 26 logos and RTL policy-card layout at desktop and narrow widths ag
 .\.venv\Scripts\python tests/family_check.py
 ```
 
+## Shared customer view
+
+Select at least two customers with imported reports using the checkboxes above the customer forms, then choose **הצגת הלקוחות יחד**. Names and family names do not need to match. **חזרה לתצוגה נפרדת** returns to the individual portfolios.
+
+The shared view places coverages with the same insurer and exact policy number in one policy card, while incomplete identification keys remain separate. It preserves every coverage, including zero premiums and suspected duplicates. Customer names identify coverage rows, additional details, source records, and editing dialogs. Edits and exclusions update only the owning customer's report. Each customer retains separate totals, including filtered totals and original-source totals. Shared policy headers also display a combined monthly total for the displayed, non-excluded coverages; annual premiums are not included in that monthly amount. Matching policy numbers do not trigger premium deduplication.
+
+Selections and shared presentation exist only in memory. Removing customers updates the view, replacing a report refreshes its shared entries, and refresh or server restart clears the workspace. Run `.\.venv\Scripts\python tests/shared_check.py` against the local app to verify the shared workflow with synthetic data.
+
 ## Data handling and limits
 
 Uploads and portfolios exist only in process/browser memory. There is no browser storage, saved upload, database, analytics, or request-content logging. Nginx access/error logs are disabled, proxy buffering is disabled, and its temporary filesystem is RAM-backed. API access logging is disabled. Both containers have read-only root filesystems and no persistent data volumes. Build contexts use an explicit allowlist; real workbooks, screenshots, and source prompts are excluded.

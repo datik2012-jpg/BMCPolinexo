@@ -111,14 +111,14 @@ export function isChanged(e: Entry) {
     return e.values[k] !== e.original[k];
   });
 }
-export function groups(entries: Entry[]) {
+export function groups(entries: Entry[], shared = false) {
   const map = new Map<string, Entry[]>();
   for (const e of entries) {
     const v = e.values;
     const key =
       v.insured_id && v.insurer.trim() && v.policy_number.trim()
         ? JSON.stringify([
-            v.insured_id,
+            ...(shared ? [] : [v.insured_id]),
             v.insurer.trim(),
             v.policy_number.trim(),
           ])
