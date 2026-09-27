@@ -30,3 +30,6 @@ frontend/public/**
 !frontend/public/insurers/
 !frontend/public/insurers/*.svg
 !frontend/public/insurers/*.png
+**/*.[xX][lL][sS]*
+**/*.[xX][lL][tT]*
+**/*.[xX][lL][aA]*

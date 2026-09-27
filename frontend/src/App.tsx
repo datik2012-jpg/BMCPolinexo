@@ -37,6 +37,7 @@ export default function App() {
     return () => window.removeEventListener("pageshow", restored);
   }, []);
   const instance = useRef<string | null>(null),
+    desktopMode = useRef(false),
     uploadVersion = useRef(0),
     checking = useRef(false);
 
@@ -54,6 +55,7 @@ export default function App() {
         const data = await response.json();
         if (typeof data.instance_id !== "string") throw Error();
         if (!active) return;
+        desktopMode.current = data.desktop_mode === true;
         if (instance.current && instance.current !== data.instance_id) {
           uploadVersion.current++;
           clearCustomers();
@@ -63,7 +65,18 @@ export default function App() {
         instance.current = data.instance_id;
         setAvailable(true);
       } catch {
-        if (active) setAvailable(false);
+        if (active) {
+          setAvailable(false);
+          // A desktop restart gets a new port: the old tab cannot reconnect
+          // to learn the new instance ID. Clear it when its launcher goes away.
+          if (desktopMode.current && instance.current !== null) {
+            uploadVersion.current++;
+            clearCustomers();
+            setBusy(false);
+            instance.current = null;
+            setMessage("החיבור ליישום נותק והנתונים נוקו. יש לפתוח את היישום מחלון ההפעלה.");
+          }
+        }
       } finally {
         checking.current = false;
       }

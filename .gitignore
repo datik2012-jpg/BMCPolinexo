@@ -24,6 +24,13 @@ playwright-report/
 *.pdf
 *.xlsm
 *.xlsb
+*.[xX][lL][sS][xX]
+*.[xX][lL][sS]
+*.[xX][lL][sS][mMbB]
+*.[xX][lL][tT]*
+*.[xX][lL][aA]*
+build/
+.build-venv/
 *.jpeg
 *.PNG
 *.webp

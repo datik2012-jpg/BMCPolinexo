@@ -20,11 +20,16 @@ async def no_cache(request, call_next):
     response = await call_next(request)
     response.headers['Cache-Control'] = 'no-store'
     response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Referrer-Policy'] = 'no-referrer'
+    response.headers['X-Frame-Options'] = 'DENY'
     return response
 
 @app.get('/api/instance')
 async def instance():
-    return {'instance_id': INSTANCE_ID}
+    result = {'instance_id': INSTANCE_ID}
+    if getattr(app.state, 'desktop_mode', False):
+        result['desktop_mode'] = True
+    return result
 
 @app.post('/api/export')
 async def export_file(request: Request):

@@ -14,6 +14,26 @@ The header uses the BMSelect logo. Policy cards show a matching insurer logo at 
 
 To display additional coverage details, choose **עריכה**, enter text in **פרטים נוספים**, then choose **שמירת תיקונים**. The saved text appears under **בדיקה ומקור** in the expanded coverage row. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
 
+## Windows installation (no Docker)
+
+The Windows package bundles Python, the API and the built UI. Employees do not
+need Docker, Python, Node.js or a runtime internet connection. Run
+`BMCPolinexo-Setup.exe` as the current user, then use the BMCPolinexo shortcut.
+A small Hebrew launcher opens the app in the default browser. **פתיחת היישום**
+opens it again; **יציאה** or closing the launcher stops the local server.
+Closing the browser alone leaves the launcher running.
+
+The app binds only to `127.0.0.1` on an available port. Repeated shortcut clicks
+reuse the same launcher. Refresh clears the workspace. In the Windows package,
+losing the launcher connection also clears the workspace, since restarting can
+change the port. Open a new session through the launcher rather than bookmarking
+the temporary address. Export any work you need before exiting or updating.
+
+See [Windows build, installation and acceptance checks](docs/WINDOWS.md) for
+building the installer, updating, uninstalling and the clean-machine test gate.
+Installer artifacts are generated under `dist/releases/<version>/` and are not
+committed to Git. The pilot installer is unsigned.
+
 ## Docker Desktop
 
 Install Docker Desktop with Linux containers, then run from the repository root:

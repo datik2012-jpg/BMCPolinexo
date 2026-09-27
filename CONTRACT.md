@@ -1,6 +1,9 @@
 # API contract
 
 GET `/api/instance` returns `{ "instance_id": "process-random-uuid" }`.
+The Windows packaged server additionally returns `desktop_mode: true`. Desktop
+tabs clear their workspace on connection loss, since restarting the launcher
+may select a different localhost port. Docker/native API behavior is unchanged.
 POST `/api/import` takes multipart field `file` (one .xlsx). Responses have Cache-Control: no-store. Errors return `{ "detail": "Hebrew user-safe message" }`.
 
 Success: `{instance_id: string, report_date: string | null, entries: Entry[], warnings: string[]}`.

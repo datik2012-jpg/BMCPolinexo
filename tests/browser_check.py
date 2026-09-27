@@ -93,7 +93,12 @@ def run():
         page.route('**/api/instance', lambda route: route.abort())
         expect(upload).to_be_disabled(timeout=10000)
         page.unroute('**/api/instance')
-        expect(upload).to_be_enabled(timeout=10000)
+        expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=10000)
+        if os.environ.get('BMC_TEST_DESKTOP') == '1':
+            expect(page.locator('.policy')).to_have_count(0)
+            import_sample()
+        else:
+            expect(upload).to_be_enabled(timeout=10000)
         expect(page.locator('.policy')).to_have_count(8)
         page.route('**/api/instance', lambda route: route.fulfill(json={'instance_id': 'test-new-server-instance'}))
         expect(page.locator('.policy')).to_have_count(0, timeout=10000)
