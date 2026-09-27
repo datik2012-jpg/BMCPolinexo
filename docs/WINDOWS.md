@@ -146,7 +146,11 @@ Final installer: `1.1.0`, 15,615,228 bytes. SHA-256:
 
 Passed on Windows 10 build 19045, under a non-elevated user:
 
-- 24 backend/runtime tests and 26 frontend tests.
+- 27 backend/runtime tests and 26 frontend tests.
+- Source launcher failure checks using the real Tk event loop and local server:
+  generic Hebrew startup errors without exception details, release of the
+  single-instance lock after failure, and a ready localhost URL offered when
+  browser launch returns false or raises. Server shutdown is checked afterward.
 - All six browser suites against the installed executable using synthetic data.
 - Hebrew/space installation path, desktop/Start Menu shortcuts, repeated launch,
   running-app upgrade/uninstall guards, upgrade from test version 1.0.99 to 1.1.0,
