@@ -6,6 +6,7 @@ import { Customer, customerReady, newCustomer, sameIdentity } from './customers'
 import { Report } from './domain';
 
 export default function App() {
+  const [agent, setAgent] = useState({ firstName: '', lastName: '', date: '' });
   const [customers, setCustomers] = useState<Customer[]>(() => [newCustomer('לקוח ראשי')]);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [sharedCustomers, setSharedCustomers] = useState<string[]>([]);
@@ -15,6 +16,7 @@ export default function App() {
   const showShared = shared.length >= 2;
   const selectionIsShown = showShared && selected.length === shared.length && selected.every(c => sharedCustomers.includes(c.id));
   function clearCustomers() {
+    setAgent({ firstName: '', lastName: '', date: '' });
     setCustomers([newCustomer('לקוח ראשי')]);
     setSelectedCustomers([]);
     setSharedCustomers([]);
@@ -179,6 +181,19 @@ export default function App() {
         )}
         <fieldset disabled={!available || busy} className="workspace">
           <section className="customers" aria-label="לקוחות המשפחה">
+            <section className="customer-card" aria-labelledby="agent-heading">
+              <div className="customer-heading">
+                <h2 id="agent-heading">פרטי סוכן הביטוח</h2>
+              </div>
+              <div className="customer-fields">
+                <label>שם פרטי<input aria-label="שם פרטי של הסוכן" type="text" autoComplete="off" maxLength={100}
+                  value={agent.firstName} onChange={event => setAgent(current => ({ ...current, firstName: event.target.value }))} /></label>
+                <label>שם משפחה<input aria-label="שם משפחה של הסוכן" type="text" autoComplete="off" maxLength={100}
+                  value={agent.lastName} onChange={event => setAgent(current => ({ ...current, lastName: event.target.value }))} /></label>
+                <label>תאריך<input aria-label="תאריך הסוכן" type="date" dir="ltr" autoComplete="off"
+                  value={agent.date} onChange={event => setAgent(current => ({ ...current, date: event.target.value }))} /></label>
+              </div>
+            </section>
             {customers.length > 1 && <section className="shared-selection" aria-label="בחירת לקוחות לתצוגה משותפת">
               <h2>הצגת לקוחות יחד</h2>
               <p className="muted">בחרו לפחות שני לקוחות עם דוח. פוליסות עם אותה חברה ואותו מספר יוצגו יחד; הסכומים יישארו נפרדים לכל לקוח.</p>
