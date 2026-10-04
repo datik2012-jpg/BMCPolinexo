@@ -293,6 +293,7 @@ main {
   overflow: hidden;
   margin: 16px 0;
 }
+.totals.without-annual { grid-template-columns: 1.25fr 1fr; }
 .totals > div {
   padding: 23px 28px;
   border-left: 1px solid #e5ebeb;
@@ -656,6 +657,7 @@ bdi {
   .totals {
     grid-template-columns: 1fr 1fr;
   }
+  .totals.without-annual { grid-template-columns: 1fr; }
   .totals > div:first-child {
     grid-column: 1/-1;
     border-bottom: 1px solid #e5ebeb;

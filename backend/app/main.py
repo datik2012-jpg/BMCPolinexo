@@ -31,13 +31,13 @@ async def export_file(request: Request):
     payload = bytearray()
     async for chunk in request.stream():
         if len(payload) + len(chunk) > MAX_BODY:
-            raise HTTPException(413, 'הנתונים גדולים מדי לייצוא אחד. נסו לייצא כל לקוח בנפרד.')
+            raise HTTPException(413, 'הנתונים גדולים מדי לייצוא אחד.')
         payload.extend(chunk)
     try:
         export = ExportRequest.model_validate_json(payload)
     except (ValidationError, ValueError):
         raise HTTPException(400, 'לא ניתן לייצא: הנתונים אינם תקינים או חורגים ממגבלות Excel.') from None
-    if any(c.report.instance_id != INSTANCE_ID for c in export.customers):
+    if any(c.report.instance_id != INSTANCE_ID for c in export.customers if c.report):
         raise HTTPException(409, 'השרת השתנה. יש לטעון את התיקים מחדש לפני הייצוא.')
     try:
         content = await run_in_threadpool(create_export, export)

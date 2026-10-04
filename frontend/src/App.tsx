@@ -1,4 +1,4 @@
-import { ExportAgentContext } from "./ExportButton";
+import { ExportAgentContext, ExportWorkspaceContext } from "./ExportButton";
 import { useEffect, useRef, useState } from "react";
 import { CustomerForm } from './CustomerForm';
 import { CustomerPortfolio } from './CustomerPortfolio';
@@ -150,6 +150,7 @@ export default function App() {
   }
   return (
     <ExportAgentContext.Provider value={agent}>
+    <ExportWorkspaceContext.Provider value={displayedCustomers}>
       <header className="topbar">
         <a href="#" className="brand" aria-label="BMSelect Insurance">
           <img className="brand-logo" src="/bmc-select.jpg" alt="BMSelect Insurance" />
@@ -269,6 +270,7 @@ export default function App() {
           חודשיים
         </footer>
       </main>
+    </ExportWorkspaceContext.Provider>
     </ExportAgentContext.Provider>
   );
 }

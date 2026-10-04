@@ -1,3 +1,33 @@
+# Version v1.2.0 — New Excel presentation — 2026-10-04
+
+- GitHub checkpoint for the compact existing/proposed Excel presentation, coverage and insured dropdowns, proportional insurer logos, full family export, and hidden source/calculation sheets.
+- Includes the follow-up UI fix that hides zero annual totals and differences while preserving nonzero annual amounts, warnings and source data.
+- Validation recorded below: 25 backend tests, 33 frontend tests, production build, browser export/proposal checks, and native Excel dropdown/recalculation/save-reopen checks passed. Local Docker services are running and localhost responds.
+- Customer workbooks, screenshots, source prompts and generated test artifacts are excluded from this version.
+
+# Hide zero annual UI amounts — 2026-10-04
+
+- Annual values of zero are hidden in current/proposed totals, filtered/source totals, shared-policy customer summaries and source-comparison differences. Nonzero amounts and incomplete-data warnings remain visible. Monthly amounts, coverage source values and Excel data are unchanged.
+- Summary grids collapse the unused annual column on desktop and mobile. Recorded this display rule in AGENTS.md and README.
+- Verified all 33 frontend tests, production build and browser proposal/export regressions, including changing a monthly premium to a nonzero annual premium and back, zero annual differences, and shared monthly-only policy headers.
+- Rebuilt/recreated only web. Localhost responds successfully; API was not restarted.
+
+# Coverage dropdowns — 2026-10-04
+
+- Replaced the expanded coverage text in both Excel states with a native **כיסויים** dropdown per policy. The initial cell shows the category (or a coverage-count heading), with the policy's coverage names in its menu. Selection changes presentation only; the insured selector continues to control the premium.
+- Coverage count no longer adds visible rows or increases policy-row height. Ordinary policy rows are 32 points; agent notes retain their wrapping/continuation behavior. Full coverage dates, categories, ownership and source rows remain in the hidden history. Repeated menu labels do not deduplicate coverage premiums.
+- Verified 25 backend tests, including 40 coverages in one compact row per state, duplicate premiums and state-specific choices. Desktop Excel passed eight coverage choices and six insured choices, unchanged totals and save/reopen. Reviewed the native Excel print rendering and passed the real browser download regression with both dropdown types.
+- Rebuilt/recreated only the API service; the web service was left running. Localhost export and page checks passed.
+
+# Compact Excel export — 2026-10-04
+
+- Implemented the requested two-state compact report based on the supplied text and the header/compact reference workbooks in Downloads. Reference files and their example data remain outside Git and Docker.
+- All family customer cards are exported, including cards without uploads. Existing and explicitly copied proposed coverages have separate grouped tables, private/general sections and agent notes. Seven logical RTL columns preserve the specified order. Catalog logos retain their proportions.
+- Native Excel list validation selects each row's family or individual premium. Family and selection totals are distinct, annual premiums remain separate, incomplete data is flagged, zero/duplicate/excluded rows remain traceable, and hidden inputs/history retain ownership and source references. Long notes use continuation rows.
+- Verification: 23 backend tests and 33 frontend tests passed; the production build passed. Browser export regression verified real downloads, all customer cards, state/notes separation, single/shared initial selections, logos, responsive RTL, errors and refresh clearing. The proposal browser regression also passed.
+- Desktop Excel verification passed all six selector choices across both states, unchanged family totals, no formula errors, and save/reopen preservation. Excel's two-page print rendering was inspected; coverage clipping found during review was fixed. The test dismisses an activation wizard only in its own automation instance. Failed test instances were cleaned up; the pre-existing user Excel window was left open.
+- Rebuilt API and web Docker images and recreated their services. API is healthy; `http://127.0.0.1:8080` returns HTTP 200. All artifacts used for verification are synthetic and ignored.
+
 # Latest update — 2026-10-04
 
 ## New features and UI — new status added

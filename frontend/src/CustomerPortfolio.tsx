@@ -3,7 +3,7 @@ import { insuranceCategory, insuranceCategories, insuranceCategoryGroups } from 
 import { useEffect, useId, useRef, useState } from "react";
 import { InsurerLogo } from "./InsurerLogo";
 import { Customer } from './customers';
-import { ExportButton } from './ExportButton';
+import { ExportButton, ExportSelectionContext } from './ExportButton';
 import {
   Entry,
   Fields,
@@ -34,7 +34,7 @@ function Totals({
 }) {
   const t = totals(entries, original);
   return (
-    <section className="totals" aria-label={title}>
+    <section className={`totals${t.annual.isZero() ? " without-annual" : ""}`} aria-label={title}>
       <div>
         <span className="eyebrow">{title}</span>
         <strong>פרמיות הביטוח</strong>
@@ -47,11 +47,11 @@ function Totals({
         <strong dir="ltr">{money(t.monthly)}</strong>
         {t.monthlyIncomplete && <small className="warning">סכום חלקי</small>}
       </div>
-      <div>
+      {!t.annual.isZero() && <div>
         <span>פרמיות שנתיות</span>
         <strong dir="ltr">{money(t.annual)}</strong>
         {t.annualIncomplete && <small className="warning">סכום חלקי</small>}
-      </div>
+      </div>}
     </section>
   );
 }
@@ -74,7 +74,7 @@ export function CustomerPortfolio(props: PortfolioProps) {
       ...member.report, entries: rows.filter(entry => props.ownerOf?.(entry).id === member.id),
     } : null })).filter(member => member.report?.entries.length);
   }
-  return <>
+  return <ExportSelectionContext.Provider value={props.members ? null : props.customer.id}>
     <div className="portfolio-navigation">
       <div role="tablist" aria-label="מצבי תיק הביטוח" onKeyDown={event => {
         if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
@@ -116,7 +116,7 @@ export function CustomerPortfolio(props: PortfolioProps) {
           })} />}
     </section>
     </div>
-  </>;
+  </ExportSelectionContext.Provider>;
 }
 
 function PortfolioView({ customer, available, setReport, members, ownerOf, readOnly = false, onCopy, onRemove }: PortfolioProps & {
@@ -171,6 +171,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
     };
   }, [edit]);
   const entries = report?.entries || [];
+  const annualChange = totals(entries).annual.minus(totals(entries, true).annual);
   const otherCategories = [...new Set(entries.map(e => insuranceCategory(e.values)))].filter(category => !insuranceCategories.includes(category));
   const categories = [...insuranceCategories, ...otherCategories];
   const categoryChecked = (category: string) => categorySelection[category] ??
@@ -369,14 +370,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                         ),
                       )}
                     </bdi>{" "}
-                    · שנתי{" "}
-                    <bdi>
-                      {money(
-                        totals(entries).annual.minus(
-                          totals(entries, true).annual,
-                        ),
-                      )}
-                    </bdi>
+                    {!annualChange.isZero() && <>· שנתי <bdi>{money(annualChange)}</bdi></>}
                     {(totals(entries).incomplete ||
                       totals(entries, true).incomplete) &&
                       " · ההשוואה חלקית עד להשלמת הפרטים החסרים"}
@@ -479,7 +473,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                             {members.filter(member => rows.some(e => ownerOf?.(e).id === member.id)).map(member => {
                               const amounts = totals(rows.filter(e => ownerOf?.(e).id === member.id));
                               return <div key={member.id}><strong>{nameOf(member)}</strong>
-                                <small>חודשי <bdi>{money(amounts.monthly)}</bdi> · שנתי <bdi>{money(amounts.annual)}</bdi>{amounts.incomplete && ' · חלקי'}</small>
+                                <small>חודשי <bdi>{money(amounts.monthly)}</bdi>{!amounts.annual.isZero() && <> · שנתי <bdi>{money(amounts.annual)}</bdi></>}{amounts.incomplete && ' · חלקי'}</small>
                               </div>;
                             })}
                             <div className="shared-monthly-total">

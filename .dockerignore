@@ -31,3 +31,5 @@ frontend/public/**
 !frontend/public/insurers/*.svg
 !frontend/public/insurers/*.png
 !backend/app/assets/bmc-select.jpg
+
+!backend/app/assets/insurers/*.png
