@@ -111,14 +111,11 @@ def parse_workbook(payload):
                             report_date = cell
                     continue
                 original = {field: texts[index] for field, index in columns.items()}
-                identifier_warning = False
                 for field in ('insured_id', 'policy_number'):
                     cell = row[columns[field]]
                     if isinstance(cell.value, (int, float)) and not isinstance(cell.value, bool):
                         if re.fullmatch(r'0+', cell.number_format or ''):
                             original[field] = original[field].zfill(len(cell.number_format))
-                        else:
-                            identifier_warning = True
                 # A section heading has no coverage-level content.
                 if original['category'].startswith('תחום') and not any(original[k] for k in FIELDS if k != 'category'):
                     continue
@@ -127,8 +124,6 @@ def parse_workbook(payload):
                 if any(row[index].data_type == 'f' for index in columns.values()):
                     raise ImportProblem('הקובץ מכיל נוסחאות. יש להעלות ייצוא עם ערכים בלבד')
                 values, issues = normalize(original)
-                if identifier_warning:
-                    issues.append('מזהה נשמר כמספר ב־Excel; יש לבדוק אם חסרים אפסים מובילים')
                 entries.append({'id': f'{len(all_entries) + len(entries) + 1}', 'source_sheet': sheet.title,
                                 'source_row': number, 'original': original, 'values': values, 'issues': issues})
             if entries:

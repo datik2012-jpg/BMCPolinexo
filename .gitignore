@@ -32,3 +32,4 @@ playwright-report/
 .agents/
 !frontend/public/bmc-select.jpg
 !frontend/public/insurers/*.png
+!backend/app/assets/bmc-select.jpg

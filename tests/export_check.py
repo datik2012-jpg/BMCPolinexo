@@ -27,7 +27,7 @@ with sync_playwright() as p:
     section = page.get_by_role('region', name='תיק לקוח בדיקה0 סינתטי', exact=True)
     section.locator('.policy summary').click()
     section.get_by_role('button', name='עריכה', exact=True).click()
-    page.get_by_role('dialog').get_by_label('פרטים נוספים', exact=True).fill('פרטים של כיסוי ראשון\n=1+1')
+    page.get_by_role('dialog').get_by_label('הוראות הסוכן', exact=True).fill('פרטים של כיסוי ראשון\n=1+1')
     page.get_by_role('button', name='שמירת תיקונים', exact=True).click()
     section.get_by_role('button', name='החרגה', exact=True).click()
 
@@ -38,7 +38,12 @@ with sync_playwright() as p:
         assert item.failure() is None
         data = Path(item.path()).read_bytes()
         item.delete()
-        return load_workbook(BytesIO(data), data_only=True)
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend/tests"))
+        from test_export import sections
+        book = load_workbook(BytesIO(data), data_only=True)
+        assert book.sheetnames == ['תיק ביטוח']
+        return sections(book)
 
     book = download(section)
     assert book['לקוחות'].max_row == 2

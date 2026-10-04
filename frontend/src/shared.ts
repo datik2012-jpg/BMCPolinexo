@@ -17,7 +17,7 @@ export function applySharedReport(customers: Customer[], selected: string[], rep
   return customers.map(c => !selected.includes(c.id) || !c.report ? c : {
     ...c, report: { ...c.report, entries: c.report.entries.map(e => {
       const change = updated.get(sharedEntryId(c.id, e.id));
-      return change ? { ...e, values: change.values, excluded: change.excluded } : e;
+      return change ? { ...e, values: change.values, excluded: change.excluded, copied: change.copied } : e;
     }) },
   });
 }

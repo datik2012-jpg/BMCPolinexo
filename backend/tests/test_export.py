@@ -9,6 +9,24 @@ from app.parser import parse_workbook
 from test_import import fixture, row
 
 
+def sections(book):
+    """Expose stacked sections for content assertions without changing the export."""
+    from openpyxl import Workbook
+    sheet = book.active
+    result = Workbook()
+    result.remove(result.active)
+    names = ['לקוחות', 'כיסויים מעודכנים', 'מקור ושינויים', 'סיכומים']
+    starts = [(cell.row, cell.value) for cells in sheet for cell in cells[:1] if cell.value in names]
+    for index, (start, name) in enumerate(starts):
+        target = result.create_sheet(name)
+        end = starts[index + 1][0] - 2 if index + 1 < len(starts) else sheet.max_row
+        for row in sheet.iter_rows(min_row=start + 1, max_row=end):
+            for cell in row:
+                copied = target.cell(cell.row - start, cell.column, cell.value)
+                copied.data_type = cell.data_type
+    return result
+
+
 def customer(identity='000000001', first='בדיקה'):
     report = parse_workbook(fixture([row(insured_id=identity, premium='10.10'),
                                      row(insured_id=identity, premium='120', frequency='שנתית'),
@@ -24,14 +42,25 @@ def test_export_preserves_notes_owners_source_and_totals():
     a['report']['entries'][0]['values']['premium'] = '20.20'
     a['report']['entries'][1]['excluded'] = True
     snapshot = deepcopy([a, b])
-    response = TestClient(app).post('/api/export', json={'customers': [a, b]})
+    response = TestClient(app).post('/api/export', json={'customers': [a, b], 'agent': {'firstName': '=Test', 'lastName': 'Agent', 'date': '2026-10-03'}})
     assert response.status_code == 200
     assert response.headers['cache-control'] == 'no-store'
     assert response.headers['x-instance-id'] == INSTANCE_ID
     assert response.headers['content-disposition'].endswith('"insurance-portfolios.xlsx"')
     book = load_workbook(BytesIO(response.content), data_only=False)
     values = load_workbook(BytesIO(response.content), data_only=True)
-    assert book.sheetnames == ['לקוחות', 'כיסויים מעודכנים', 'מקור ושינויים', 'סיכומים']
+    assert book.sheetnames == ['תיק ביטוח']
+    combined = book.active
+    assert combined['B2'].value == '=Test'
+    assert combined['B2'].data_type == 's'
+    assert combined['C2'].value == 'Agent'
+    assert combined['D2'].value == '2026-10-03'
+    assert len(combined._images) == 1
+    assert combined.page_setup.fitToWidth == combined.page_setup.fitToHeight == 1
+    assert combined.row_dimensions[2].height == 21
+    assert combined.sheet_view.rightToLeft and combined.freeze_panes and combined.auto_filter.ref
+    book = sections(book)
+    values = sections(values)
     sheet = book['כיסויים מעודכנים']
     assert sheet.max_row == 7
     assert sheet['D2'].value == '000000001'
@@ -47,7 +76,6 @@ def test_export_preserves_notes_owners_source_and_totals():
     assert values['סיכומים']['D3'].value == 10.1
     assert values['סיכומים']['E3'].value == 120
     assert book['סיכומים']['D2'].data_type == 'f'
-    assert all(s.sheet_view.rightToLeft and s.freeze_panes and s.auto_filter.ref for s in book)
     assert [a, b] == snapshot
 
 
@@ -55,7 +83,7 @@ def test_export_invalid_premium_is_partial_and_keeps_text():
     c = customer()
     c['report']['entries'][0]['values']['premium'] = 'bad'
     result = TestClient(app).post('/api/export', json={'customers': [c]})
-    book = load_workbook(BytesIO(result.content), data_only=True)
+    book = sections(load_workbook(BytesIO(result.content), data_only=True))
     assert book['כיסויים מעודכנים']['L2'].value == 'bad'
     assert book['סיכומים']['D2'].value == 0
     assert 'חלקי' in book['סיכומים']['F2'].value

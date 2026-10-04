@@ -6,7 +6,7 @@ export const labels = {
   product_type: "מוצר / כיסוי",
   insurer: "חברת ביטוח",
   period: "תקופת ביטוח",
-  additional_details: "פרטים נוספים",
+  additional_details: "הוראות הסוכן",
   premium: "פרמיה",
   frequency: "תדירות תשלום",
   policy_number: "מספר פוליסה",
@@ -21,6 +21,8 @@ export type Entry = {
   values: Fields;
   issues: string[];
   excluded?: boolean;
+  baseline?: Fields;
+  copied?: boolean;
 };
 export type Report = {
   instance_id: string;

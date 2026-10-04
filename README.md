@@ -6,13 +6,15 @@ First product version: [v1.0.0](https://github.com/datik2012-jpg/BMCPolinexo/tre
 
 ## Policy display and corrections
 
-The workspace starts with one customer card. First name, last name, a nine-digit ID and gender are required to enable Excel upload. Relationship, birth date and smoking status are optional; a supplied birth date must be valid. Insurance age is calculated at the last birthday. Use **הוסף לקוח נוסף** for a spouse, child or another family member. Customer forms appear together above the insurance portfolios. **הוסף לקוח נוסף** sits below the first form; additional customer forms appear below that button, before all portfolio totals and coverage lists. Existing portfolios remain visible, and each customer has independent filters, edits and source reconciliation.
+Edited coverage rows do not display a **תוקן** label in the actions column. Correction tracking and source comparison remain available.
+
+The workspace starts with one customer card. First name, last name, a nine-digit ID and gender are required to enable Excel upload. Relationship, birth date and smoking status are optional; a supplied birth date must be valid. Insurance age is calculated at the last birthday. Use **הוסף לקוח נוסף** for a spouse, child or another family member. Customer forms appear together above the insurance portfolios. **הוסף לקוח נוסף** follows the most recently added remaining customer form. New customers are appended in creation order. Selecting בן/בת זוג places that customer second in forms, selection lists and portfolios; other customers retain creation order and the first customer stays in place. Changing the relationship restores creation order. If multiple spouses are selected, the earliest added spouse takes the second position. Existing portfolios remain visible, and each customer has independent filters, edits and source reconciliation.
 
 The imported ID must match the customer's ID (allowing leading zeros lost by Excel). Duplicate customer IDs are blocked. An unsuccessful upload preserves the previous portfolio; a successful replacement replaces only that customer's report and corrections. The ID is read-only once a report is attached. Removing a customer with a report requires confirmation. Refresh or server restart clears all customer details and portfolios. The one-insured-person import limit applies separately to each workbook.
 
-The header uses the BMSelect logo. Policy cards show a matching insurer logo at the top-right. The local catalog covers 26 insurers and insurance brands, including names absent from the current workbook; Hebrew and English aliases affect display only, not policy grouping. Unknown names remain visible without a guessed logo. See [logo sources and maintenance](docs/INSURER_LOGOS.md).
+The header places the BMSelect logo in the top-right corner with an 8px inset at desktop and mobile widths, preserving its aspect ratio. Policy cards show a matching insurer logo at the top-right. The local catalog covers 26 insurers and insurance brands, including names absent from the current workbook; Hebrew and English aliases affect display only, not policy grouping. Unknown names remain visible without a guessed logo. See [logo sources and maintenance](docs/INSURER_LOGOS.md).
 
-To display additional coverage details, choose **עריכה**, enter text in **פרטים נוספים**, then choose **שמירת תיקונים**. The saved text appears under **בדיקה ומקור** in the expanded coverage row. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
+To display additional coverage details, choose **עריכה**, enter text in **הוראות הסוכן**, then choose **שמירת תיקונים**. The saved text appears below the source row/sheet under **בדיקה ומקור**, with a bold **הוראות הסוכן** heading. This section is open by default and can be collapsed. Numeric Excel identifiers no longer produce a leading-zero warning; explicit zero-padding formats are still preserved. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
 
 ## Docker Desktop
 
@@ -34,6 +36,34 @@ docker compose down
 ```
 
 An open page checks server identity every three seconds and on focus. A changed identity clears the portfolio; loss of connectivity locks interaction until availability is known. Browser refresh immediately clears all imported data and corrections.
+
+## Workflow after each change
+
+Update the relevant Markdown documentation and run checks appropriate to the change. Keep the local Docker app synchronized with the source before handing off:
+
+```powershell
+# Frontend changes: rebuild and rerun only the web service.
+docker compose up -d --build --no-deps web
+# Backend changes: rebuild and rerun only the API service.
+docker compose up -d --build --no-deps api
+# Changes affecting both services or Compose configuration.
+docker compose up -d --build
+# Documentation-only changes outside the image context: ensure services are running.
+docker compose up -d
+# Verify service status and the local page.
+docker compose ps
+(Invoke-WebRequest http://127.0.0.1:8080 -UseBasicParsing).StatusCode
+```
+
+A local `npm run build` does not update the running Docker image. Rebuild the affected service as shown above. Avoid restarting unaffected services. Browser refresh loads the new UI and clears temporary customer data; API replacement also clears open portfolios through restart detection.
+
+### Compact agent and customer forms
+
+The agent date defaults to today's local calendar date when the app opens or the workspace resets. It remains editable, and reopening the agent form preserves the selected date.
+
+The memory-only notice and the current workspace status share one compact line at a uniform font size. Text wraps naturally on narrow screens; error alerts remain separate.
+
+Agent fields use one compact row on wide screens. Choose **סיום עריכה** to collapse them to a summary containing the agent name and date; select the summary to edit again. Customer fields use five columns on wide screens, with smaller controls and spacing. Narrow screens use fewer columns. Customer **סיום עריכה** hides the details while keeping the customer header and upload controls available.
 
 ## Native development and checks
 
@@ -99,9 +129,9 @@ Selections and shared presentation exist only in memory. Removing customers upda
 
 ### Excel export
 
-Use **ייצוא ל־Excel** beside a customer's portfolio, or in the shared view to export all displayed customers. Export includes every coverage for those customers regardless of active filters, including excluded and zero-premium rows. Each coverage's **פרטים נוספים** stays in the same row as that coverage and its customer name.
+Use **ייצוא ל־Excel** beside a customer's portfolio, or in the shared view to export all displayed customers. Export includes every coverage for those customers regardless of active filters, including excluded and zero-premium rows. Each coverage's **הוראות הסוכן** stays in the same row as that coverage and its customer name.
 
-The workbook contains Hebrew RTL sheets for customer details, current coverages, original/current values with source row references, and per-customer monthly and annual totals. Excluded rows are marked and omitted from current totals. Invalid amounts/frequencies remain visible and mark totals as partial. Text is stored literally, including text that starts with `=`, so notes cannot become Excel formulas. Totals use numeric monthly/annual snapshot columns and exclusion status; the exported workbook is a snapshot, not a round-trip import format.
+The workbook contains one compact Hebrew RTL worksheet, beginning with the BMC Select logo, agent name and date, followed by customer details, coverages, source/correction history with row references, and separate per-customer monthly and annual totals. Excluded rows are marked and omitted from current totals. Invalid amounts/frequencies remain visible and mark totals as partial. Text is stored literally, including text that starts with `=`, so notes cannot become Excel formulas. Totals use numeric monthly/annual snapshot columns and exclusion status; the exported workbook is a snapshot, not a round-trip import format.
 
 Export is generated in memory and downloaded to the agent's computer. The server does not save it. The downloaded file remains after the browser workspace clears. Export requests are limited to 5 MiB, 50 customers, and 20,000 coverages; export individual customers if the combined request is too large. Excel cell text limits are checked rather than silently truncating notes.
 
@@ -116,3 +146,13 @@ The pilot trusts the local operating-system account and local machine. It is not
 See `CONTRACT.md` for the import API and field conventions and `AGENTS.md` for durable project decisions.
 
 The initial Git publication was reviewed for client data and credentials. Real workbooks, screenshots, source prompts, environment files, caches, and test artifacts are excluded from Git. Committed raster logos have personal/text metadata removed. Keep these exclusions in place when adding files.
+
+Source comparison includes **חזרה לפוליסות** beside the source introduction and inside each expanded source row, so users can return directly to the policy list from the inspected source. The button inside each expanded source row is aligned to the left in the RTL layout. Returning preserves filters and corrections and clears the focused source row.
+
+Individual policy headers display the monthly amount only in both existing and proposed views. Annual premiums remain available in coverage details, portfolio totals, and Excel export. Portfolio summaries use compact per-customer premium rows with monthly and annual amounts kept separate. Import review details expand on demand while the review count remains visible. Source comparison and Excel export buttons align along their top edge, with export guidance below the button.
+
+In the proposed state, **הסרה מהמצב החדש** removes the copied coverage and discards its temporary edits/exclusion. The existing-state coverage, source values, and ownership remain intact; it can be copied again from its imported baseline. Proposed totals immediately omit the removed copy. This also applies in the shared view.
+
+### Existing and new states
+
+Imported coverages are read-only under **מצב קיים — לפני השינויים**. Explicitly copy a coverage into **מצב חדש, חוסרים והמלצות** before editing it. Copies preserve customer ownership and the imported baseline. Proposed totals include copied coverages only; an uncopied coverage does not imply cancellation. Recommendation fields and disk persistence are not included.

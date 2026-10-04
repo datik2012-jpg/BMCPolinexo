@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { copyCoverage, mergeProposal, removeProposalCoverage, startingEntry } from './workspace';
+import { insuranceCategory, insuranceCategories, insuranceCategoryGroups } from './insuranceCategories';
+import { useEffect, useId, useRef, useState } from "react";
 import { InsurerLogo } from "./InsurerLogo";
 import { Customer } from './customers';
 import { ExportButton } from './ExportButton';
@@ -53,10 +55,72 @@ function Totals({
     </section>
   );
 }
-export function CustomerPortfolio({ customer, available, setReport, members, ownerOf }: {
+type PortfolioProps = {
   customer: Customer; available: boolean;
   members?: Customer[]; ownerOf?: (entry: Entry) => Customer;
   setReport: (value: Report | null | ((r: Report | null) => Report | null)) => void;
+};
+
+export function CustomerPortfolio(props: PortfolioProps) {
+  const [view, setView] = useState<'existing' | 'proposed'>('existing');
+  const [compare, setCompare] = useState(false);
+  const viewId = useId();
+  const report = props.customer.report;
+  if (!report) return null;
+  const baseline = { ...report, entries: report.entries.map(startingEntry) };
+  const proposal = { ...report, entries: report.entries.filter(entry => entry.copied) };
+  function sectionCustomers(rows: Entry[]) {
+    return props.members?.map(member => ({ ...member, report: member.report ? {
+      ...member.report, entries: rows.filter(entry => props.ownerOf?.(entry).id === member.id),
+    } : null })).filter(member => member.report?.entries.length);
+  }
+  return <>
+    <div className="portfolio-navigation">
+      <div role="tablist" aria-label="מצבי תיק הביטוח" onKeyDown={event => {
+        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'existing' : event.key === 'End' ? 'proposed' : view === 'existing' ? 'proposed' : 'existing';
+          setView(next); setCompare(false);
+          document.getElementById(`${viewId}-${next}-tab`)?.focus();
+        }
+      }}>
+        {(['existing', 'proposed'] as const).map(tab => <button key={tab} id={`${viewId}-${tab}-tab`}
+          role="tab" aria-selected={view === tab} tabIndex={view === tab ? 0 : -1}
+          aria-controls={`${viewId}-${tab}`} className={`state-tab ${tab}`}
+          onClick={() => { setView(tab); setCompare(false); }}>
+          {tab === 'existing' ? 'מצב קיים' : 'מצב חדש'} <span>{tab === 'existing' ? baseline.entries.length : proposal.entries.length}</span>
+        </button>)}
+      </div>
+      <button type="button" className={compare ? 'selected' : ''} aria-pressed={compare} onClick={() => setCompare(!compare)}>השוואה</button>
+    </div>
+    <div className={compare ? 'portfolio-views comparing' : 'portfolio-views'}>
+    <section id={`${viewId}-existing`} role="tabpanel" aria-labelledby={`${viewId}-existing-tab`} hidden={!compare && view !== 'existing'} className="comparison-section existing-section" aria-label="מצב קיים — לפני השינויים">
+      <h2>מצב קיים — לפני השינויים</h2>
+      <p className="muted">נתוני הייבוא נשארים ללא שינוי. העתיקו כיסוי למצב החדש כדי לערוך אותו.</p>
+      <PortfolioView {...props} customer={{ ...props.customer, report: baseline }}
+        members={sectionCustomers(baseline.entries)} readOnly
+        onCopy={id => props.setReport(current => current ? copyCoverage(current, id) : null)} />
+    </section>
+    <section id={`${viewId}-proposed`} role="tabpanel" aria-labelledby={`${viewId}-proposed-tab`} hidden={!compare && view !== 'proposed'} className="comparison-section proposed-section" aria-label="מצב חדש, חוסרים והמלצות">
+      <h2>מצב חדש, חוסרים והמלצות</h2>
+      <p className="muted">הצעה בלבד · הסכומים כוללים רק כיסויים שהועתקו. כיסוי שלא הועתק אינו נחשב כמבוטל.</p>
+      {!proposal.entries.length ? <p className="empty">עדיין לא הועתקו כיסויים. לחצו על ״העתקה למצב החדש״ במצב הקיים.</p> :
+        <PortfolioView {...props} customer={{ ...props.customer, report: proposal }}
+          members={sectionCustomers(proposal.entries)}
+          onRemove={id => props.setReport(current => current ? removeProposalCoverage(current, id) : null)}
+          setReport={value => props.setReport(current => {
+            if (!current) return null;
+            const working = { ...current, entries: current.entries.filter(entry => entry.copied) };
+            const next = typeof value === 'function' ? value(working) : value;
+            return next ? mergeProposal(current, next) : current;
+          })} />}
+    </section>
+    </div>
+  </>;
+}
+
+function PortfolioView({ customer, available, setReport, members, ownerOf, readOnly = false, onCopy, onRemove }: PortfolioProps & {
+  readOnly?: boolean; onCopy?: (id: string) => void; onRemove?: (id: string) => void;
 }) {
   const report = customer.report;
   const nameOf = (c: Customer) => [c.details.firstName, c.details.lastName].filter(Boolean).join(' ');
@@ -107,13 +171,14 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
     };
   }, [edit]);
   const entries = report?.entries || [];
-  const categories = [...new Set(entries.map(e => e.values.category))];
+  const otherCategories = [...new Set(entries.map(e => insuranceCategory(e.values)))].filter(category => !insuranceCategories.includes(category));
+  const categories = [...insuranceCategories, ...otherCategories];
   const categoryChecked = (category: string) => categorySelection[category] ??
-    !['ביטוח רכב', 'ביטוח סיעודי'].includes(category.trim());
+    !['רכב', 'סיעוד'].includes(category);
   const selectedCategoryCount = categories.filter(categoryChecked).length;
   const filtered = entries.filter(
     (e) =>
-      categoryChecked(e.values.category) &&
+      categoryChecked(insuranceCategory(e.values)) &&
       (!filters.insurer || e.values.insurer === filters.insurer) &&
       (!filters.frequency ||
         frequency(e.values.frequency) === filters.frequency) &&
@@ -127,6 +192,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
   ).length;
   const activeFilters = Object.values(filters).some(Boolean) || selectedCategoryCount < categories.length;
   function update(entry: Entry) {
+    if (readOnly || !available) return;
     setReport((r) =>
       r
         ? {
@@ -137,6 +203,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
     );
   }
   function startEdit(e: Entry) {
+    if (readOnly || !available) return;
     editButton.current = document.activeElement as HTMLElement;
     setEdit(e);
     setDraft({ ...e.values });
@@ -144,7 +211,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
   return <>
           {report && (
             <>
-              <div className="section-heading">
+              <div className="section-heading portfolio-heading">
                 <div>
                   <h2>{members ? 'תצוגה משותפת' : 'תיק הביטוח'} — {members ? members.map(nameOf).join(' · ') : nameOf(customer)}</h2>
                   <p className="muted">
@@ -156,6 +223,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                     )}
                   </p>
                 </div>
+                <div className="portfolio-actions">
                 <button
                   className={source ? "selected" : ""}
                   onClick={() => setSource(!source)}
@@ -163,23 +231,24 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                   {source ? "חזרה לפוליסות" : "השוואה למקור"}
                 </button>
                 <ExportButton customers={members || [customer]} available={available} />
+                </div>
               </div>
-              {portfolioTotals(entries, "כל התיק · אחרי תיקונים")}
+              {portfolioTotals(entries, readOnly ? "מצב קיים · כל הכיסויים" : "מצב חדש · כיסויים שהועתקו בלבד")}
               {(flagged > 0 || report.warnings.length > 0) && (
-                <div className="review-banner">
-                  <strong>
+                <details className="review-banner portfolio-review">
+                  <summary>
                     {flagged > 0
                       ? `${flagged} כיסויים דורשים בדיקה`
                       : "הערות לייבוא"}
-                  </strong>
-                  <span>
+                  </summary>
+                  <p>
                     שורות חשודות אינן נמחקות אוטומטית. הפרמיות התקינות נכללות עד
                     להחרגה.
-                  </span>
+                  </p>
                   {report.warnings.map((w, i) => (
                     <p key={i}>{w}</p>
                   ))}
-                </div>
+                </details>
               )}
               <div className="filters">
                 <div className="category-filter">
@@ -195,11 +264,24 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                         selectedCategoryCount === 0 ? 'לא נבחרו ענפים' : `${selectedCategoryCount} מתוך ${categories.length} ענפים`}
                     </summary>
                     <div className="category-options" role="group" aria-label="בחירת ענפי ביטוח">
-                      {categories.map(category => <label key={category}>
-                        <input type="checkbox" checked={categoryChecked(category)}
-                          onChange={e => setCategorySelection(previous => ({ ...previous, [category]: e.target.checked }))} />
-                        {category || 'ללא ענף ביטוח'}
-                      </label>)}
+                      {insuranceCategoryGroups.map(group => <details className="category-group" key={group.label}>
+                        <summary>{group.label}</summary>
+                        <div role="group" aria-label={group.label}>
+                          {group.options.map(category => <label key={category}>
+                            <input type="checkbox" checked={categoryChecked(category)}
+                              onChange={e => setCategorySelection(previous => ({ ...previous, [category]: e.target.checked }))} />
+                            {category}
+                          </label>)}
+                        </div>
+                      </details>)}
+                      {otherCategories.length > 0 && <div className="category-unmapped" role="group" aria-label="ענפים נוספים מהקובץ">
+                        <span>ענפים נוספים מהקובץ</span>
+                        {otherCategories.map(category => <label key={category}>
+                          <input type="checkbox" checked={categoryChecked(category)}
+                            onChange={e => setCategorySelection(previous => ({ ...previous, [category]: e.target.checked }))} />
+                          {category}
+                        </label>)}
+                      </div>}
                     </div>
                   </details>
                 </div>
@@ -271,6 +353,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                 <>
                   <div className="source-intro">
                     <h2>מהמקור לתיק המעודכן</h2>
+                    <button type="button" onClick={() => { setSource(false); setSourceFocus(null); }}>חזרה לפוליסות</button>
                     <p>
                       ערכי המקור אינם משתנים. כאן אפשר לבדוק כל שורה ואת ההשפעה
                       המצטברת של התיקונים וההחרגות.
@@ -319,6 +402,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                               : "לבדיקה מול המקור"}
                         </span>
                       </summary>
+                      <button type="button" onClick={() => { setSource(false); setSourceFocus(null); }}>חזרה לפוליסות</button>
                       <div className="table-scroll">
                         <table>
                           <thead>
@@ -349,7 +433,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                           </tbody>
                         </table>
                       </div>
-                      <button onClick={() => startEdit(e)}>עריכת השורה</button>
+                      {!readOnly && <button onClick={() => startEdit(e)}>עריכת השורה</button>}
                     </details>
                   ))}
                 </>
@@ -359,7 +443,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                     const first = rows[0].values,
                       t = totals(rows);
                     return (
-                      <details className="policy" key={key}>
+                      <details className="policy" key={key} open>
                         <summary>
                           <span className="policy-marker">
                             <InsurerLogo insurer={first.insurer} />
@@ -391,17 +475,6 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                               כמות כיסויים: {rows.length}
                             </small>
                           </div>
-                          {rows.some(e => e.values.additional_details.trim()) && (
-                            <div className="policy-details">
-                              <strong>פרטים נוספים</strong>
-                              {rows.filter(e => e.values.additional_details.trim()).map(e => (
-                                <div key={e.id}>
-                                  <small>{members && <><bdi>{entryName(e)}</bdi> · </>}{e.values.subcategory || e.values.product_type || 'כיסוי'} · שורה {e.source_row}{e.excluded ? ' · הוחרג מהחישוב' : ''}</small>
-                                  <div dir="auto">{e.values.additional_details}</div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
                           {members ? <div className="shared-policy-totals">
                             {members.filter(member => rows.some(e => ownerOf?.(e).id === member.id)).map(member => {
                               const amounts = totals(rows.filter(e => ownerOf?.(e).id === member.id));
@@ -418,10 +491,6 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                             <small>חודשי</small>
                             <bdi>{money(t.monthly)}</bdi>
                           </div>
-                          <div className="policy-amount">
-                            <small>שנתי</small>
-                            <bdi>{money(t.annual)}</bdi>
-                          </div>
                           {t.incomplete && <span className="badge">חלקי</span>}</>}
                         </summary>
                         <div className="table-scroll">
@@ -433,7 +502,7 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                                 <th>תקופת ביטוח</th>
                                 <th>פרמיה</th>
                                 <th>בדיקה ומקור</th>
-                                <th>פעולות</th>
+                                <th className="actions">פעולות</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -467,6 +536,10 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                                       שורה {e.source_row} ·{" "}
                                       <Value value={e.source_sheet} />
                                     </small>
+                                    {e.values.additional_details.trim() && <details className="coverage-details" open>
+                                      <summary><strong>הוראות הסוכן</strong></summary>
+                                      <div dir="auto">{e.values.additional_details}</div>
+                                    </details>}
                                     {e.excluded ? (
                                       <span className="badge">
                                         הוחרג מהחישוב
@@ -480,9 +553,9 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                                     )}
                                   </td>
                                   <td className="actions">
-                                    {isChanged(e) && (
-                                      <small className="edited">תוקן</small>
-                                    )}
+                                    {readOnly ? <button disabled={!available || e.copied} onClick={() => onCopy?.(e.id)}>
+                                      {e.copied ? 'הועתק למצב החדש' : 'העתקה למצב החדש'}
+                                    </button> : <>
                                     <button onClick={() => startEdit(e)}>
                                       עריכה
                                     </button>
@@ -501,6 +574,11 @@ export function CustomerPortfolio({ customer, available, setReport, members, own
                                     >
                                       {e.excluded ? "שחזור" : "החרגה"}
                                     </button>
+                                    <button disabled={!available} onClick={() => onRemove?.(e.id)}
+                                      title="הסרת העותק והשינויים מהמצב החדש. הכיסוי המקורי נשאר במצב הקיים וניתן להעתיק אותו שוב.">
+                                      הסרה מהמצב החדש
+                                    </button>
+                                    </>}
                                   </td>
                                 </tr>
                               ))}

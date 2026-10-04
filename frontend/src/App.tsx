@@ -1,22 +1,31 @@
+import { ExportAgentContext } from "./ExportButton";
 import { useEffect, useRef, useState } from "react";
 import { CustomerForm } from './CustomerForm';
 import { CustomerPortfolio } from './CustomerPortfolio';
 import { SharedPortfolio } from './SharedPortfolio';
-import { Customer, customerReady, newCustomer, sameIdentity } from './customers';
+import { Customer, customerReady, newCustomer, orderedCustomers, sameIdentity } from './customers';
 import { Report } from './domain';
 
+function newAgent() {
+  const today = new Date();
+  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  return { firstName: '', lastName: '', date };
+}
+
 export default function App() {
-  const [agent, setAgent] = useState({ firstName: '', lastName: '', date: '' });
+  const [agent, setAgent] = useState(newAgent);
+  const agentDisclosure = useRef<HTMLDetailsElement>(null);
   const [customers, setCustomers] = useState<Customer[]>(() => [newCustomer('לקוח ראשי')]);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [sharedCustomers, setSharedCustomers] = useState<string[]>([]);
-  const eligible = customers.filter(c => c.report);
+  const displayedCustomers = orderedCustomers(customers);
+  const eligible = displayedCustomers.filter(c => c.report);
   const selected = eligible.filter(c => selectedCustomers.includes(c.id));
   const shared = eligible.filter(c => sharedCustomers.includes(c.id));
   const showShared = shared.length >= 2;
   const selectionIsShown = showShared && selected.length === shared.length && selected.every(c => sharedCustomers.includes(c.id));
   function clearCustomers() {
-    setAgent({ firstName: '', lastName: '', date: '' });
+    setAgent(newAgent());
     setCustomers([newCustomer('לקוח ראשי')]);
     setSelectedCustomers([]);
     setSharedCustomers([]);
@@ -120,6 +129,7 @@ export default function App() {
         return;
       }
       const imported = data as Report;
+      imported.entries = imported.entries.map(entry => ({ ...entry, baseline: { ...entry.values }, copied: false }));
       const identities = imported.entries.map(e => e.values.insured_id).filter(Boolean);
       if (!identities.length || identities.some(id => !sameIdentity(id, customer.details.identity))) {
         setError('תעודת הזהות בקובץ אינה תואמת ללקוח. הדוח הקודם נשמר; יש לבחור קובץ מתאים.');
@@ -139,7 +149,7 @@ export default function App() {
     }
   }
   return (
-    <>
+    <ExportAgentContext.Provider value={agent}>
       <header className="topbar">
         <a href="#" className="brand" aria-label="BMSelect Insurance">
           <img className="brand-logo" src="/bmc-select.jpg" alt="BMSelect Insurance" />
@@ -160,15 +170,10 @@ export default function App() {
           </div>
           <span className="privacy">◈ הנתונים זמניים בלבד</span>
         </div>
-        <div className="notice">
-          המידע נשמר בזיכרון בלבד. רענון העמוד או הפעלה מחדש של השרת ימחקו את
-          התיק ואת התיקונים.
+        <div className="notice workspace-notice">
+          <span>המידע נשמר בזיכרון בלבד. רענון העמוד או הפעלה מחדש של השרת ימחקו את התיק ואת התיקונים.</span>
+          {message && <><span className="notice-separator" aria-hidden="true"> · </span><span role="status" className="notice-status">{message}</span></>}
         </div>
-        {message && (
-          <p role="status" className="success">
-            {message}
-          </p>
-        )}
         {error && (
           <p role="alert" className="error">
             {error}
@@ -181,7 +186,14 @@ export default function App() {
         )}
         <fieldset disabled={!available || busy} className="workspace">
           <section className="customers" aria-label="לקוחות המשפחה">
-            <section className="customer-card" aria-labelledby="agent-heading">
+            <details className="agent-disclosure" ref={agentDisclosure}>
+              <summary>
+                פרטי סוכן
+                {(agent.firstName.trim() || agent.lastName.trim()) && <span className="agent-summary"> · {`${agent.firstName} ${agent.lastName}`.trim()}</span>}
+                {agent.date && <span className="agent-summary"> · <bdi>{agent.date.split('-').reverse().join('/')}</bdi></span>}
+                <span className="agent-edit-hint"> · עריכה</span>
+              </summary>
+              <section className="customer-card" aria-labelledby="agent-heading">
               <div className="customer-heading">
                 <h2 id="agent-heading">פרטי סוכן הביטוח</h2>
               </div>
@@ -193,12 +205,19 @@ export default function App() {
                 <label>תאריך<input aria-label="תאריך הסוכן" type="date" dir="ltr" autoComplete="off"
                   value={agent.date} onChange={event => setAgent(current => ({ ...current, date: event.target.value }))} /></label>
               </div>
+              <button type="button" className="primary customer-done" onClick={() => {
+                if (agentDisclosure.current) {
+                  agentDisclosure.current.open = false;
+                  agentDisclosure.current.querySelector('summary')?.focus();
+                }
+              }}>סיום עריכה</button>
             </section>
+            </details>
             {customers.length > 1 && <section className="shared-selection" aria-label="בחירת לקוחות לתצוגה משותפת">
               <h2>הצגת לקוחות יחד</h2>
               <p className="muted">בחרו לפחות שני לקוחות עם דוח. פוליסות עם אותה חברה ואותו מספר יוצגו יחד; הסכומים יישארו נפרדים לכל לקוח.</p>
               <div className="shared-customer-options">
-                {customers.map((c, index) => <label key={c.id}>
+                {displayedCustomers.map((c, index) => <label key={c.id}>
                   <input type="checkbox" disabled={!c.report} checked={selectedCustomers.includes(c.id)}
                     onChange={event => setSelectedCustomers(ids => event.target.checked ? [...ids, c.id] : ids.filter(id => id !== c.id))} />
                   <span>{[c.details.firstName, c.details.lastName].filter(Boolean).join(' ') || `לקוח ${index + 1}`}{!c.report && ' · יש להעלות דוח'}</span>
@@ -212,7 +231,7 @@ export default function App() {
               <button type="button" className={selectionIsShown ? 'shared-view-active' : ''} aria-pressed={selectionIsShown} disabled={selected.length < 2} onClick={() => setSharedCustomers(selected.map(c => c.id))}>הצגת הלקוחות יחד · {selected.length}</button>
               {showShared && <button type="button" onClick={() => setSharedCustomers([])}>חזרה לתצוגה נפרדת</button>}
             </section>}
-            {customers.map(customer => <div key={customer.id}>
+            {displayedCustomers.map(customer => <div key={customer.id}>
               <CustomerForm customer={customer} disabled={!available || busy}
                 duplicate={customers.some(c => c.id !== customer.id && sameIdentity(c.details.identity, customer.details.identity))}
                 onChange={details => setCustomers(all => all.map(c => c.id === customer.id ? { ...c, details } : c))}
@@ -226,8 +245,8 @@ export default function App() {
                   });
                 }}
                 onUpload={file => void upload(customer, file)} />
-              {customer.id === customers[0].id && <div className="add-customer-row">
-                <button type="button" onClick={() => setCustomers(all => [all[0], newCustomer(), ...all.slice(1)])}>+ הוסף לקוח נוסף</button>
+              {customer.id === customers[customers.length - 1].id && <div className="add-customer-row">
+                <button type="button" onClick={() => setCustomers(all => [...all, newCustomer()])}>+ הוסף לקוח נוסף</button>
                 <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
               </div>}
             </div>)}
@@ -235,7 +254,7 @@ export default function App() {
               <SharedPortfolio key={shared.map(c => `${c.id}-${c.revision || 0}`).join('|')}
                 customers={shared} available={available && !busy} setCustomers={setCustomers} />
             </section>}
-            {customers.map(customer => <section hidden={showShared} className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
+            {displayedCustomers.map(customer => <section hidden={showShared} className="customer-section" key={customer.id} aria-label={`תיק לקוח ${customer.details.firstName || 'חדש'} ${customer.details.lastName}`}>
               <CustomerPortfolio customer={customer} available={available && !busy}
                 key={`${customer.id}-${customer.revision || 0}`}
                 setReport={value => setCustomers(all => all.map(c => c.id === customer.id ? {
@@ -250,6 +269,6 @@ export default function App() {
           חודשיים
         </footer>
       </main>
-    </>
+    </ExportAgentContext.Provider>
   );
 }

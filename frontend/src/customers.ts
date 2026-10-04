@@ -47,3 +47,9 @@ export function sameIdentity(a: string, b: string): boolean {
   return /^\d{1,9}$/.test(a.trim()) && /^\d{1,9}$/.test(b.trim()) &&
     a.trim().padStart(9, '0') === b.trim().padStart(9, '0');
 }
+
+export function orderedCustomers(customers: Customer[]): Customer[] {
+  const spouse = customers.findIndex((customer, index) => index > 0 && customer.details.relationship === 'בן/בת זוג');
+  if (spouse < 0) return customers;
+  return [customers[0], customers[spouse], ...customers.slice(1).filter((_, index) => index + 1 !== spouse)];
+}

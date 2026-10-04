@@ -1,3 +1,47 @@
+# Latest update — 2026-10-04
+
+## New features and UI — new status added
+
+- GitHub checkpoint includes the existing/proposed-state workflow, explicit coverage copying and removal, insurance category display, compact RTL forms and totals, header logo positioning, and branded single-worksheet Excel export.
+- Checkpoint verification: 20 backend tests, 33 frontend tests, and the synthetic proposal browser check passed. The web production build and desktop/mobile logo placement were verified; local Docker services remain available.
+
+- Moved the header logo to the top-right corner with an 8px inset and natural image aspect ratio. Updated README; Docker production build passed, rebuilt/recreated only web, and browser checks at 1280px and 375px verified the inset and localhost HTTP 200.
+
+- Agent date now defaults to the current local calendar date on opening/reset, while remaining editable. Reopening the form preserves the selected date. Updated README; all 33 frontend tests and Docker production build passed. Rebuilt/recreated only web and verified localhost HTTP 200.
+
+- Removed the annual amount from individual policy headers in existing and proposed views. Annual data and totals remain preserved. Updated README; all 33 frontend tests and Docker production build passed. Recreated only web and verified localhost HTTP 200 and the updated served bundle.
+
+- Removed the **תוקן** label from coverage actions while preserving correction tracking and source comparison. Docker production build passed; only web was recreated. Localhost returned HTTP 200 and the served JavaScript no longer contains the label.
+
+- Aligned the return-to-policies button inside expanded source rows to the left in RTL. Updated README; Docker production build passed, only web was recreated, and localhost returned HTTP 200.
+
+- Restored left alignment for the coverage action buttons and their column heading in both existing and proposed views, preserving RTL button order.
+- Verified the production build in Docker and the synthetic proposal browser workflow on localhost, including computed alignment and button positioning in both views. Rebuilt and recreated only the web service.
+
+- Follow-up: verified the instructions appear below the source line, start expanded, and close/reopen on click. All 33 frontend tests, production build, and the synthetic browser check passed. Rebuilt only the web service and verified localhost through the browser check.
+
+- Removed the numeric Excel identifier warning while preserving explicit identifier zero-padding. Moved **הוראות הסוכן** into **בדיקה ומקור**, below the source row/sheet, with a bold heading and a collapsible section open by default.
+- Verified 20 backend tests, 33 frontend tests, production build, and the synthetic proposal browser check including visible instructions in the source column. Rebuilt and updated API/web Docker services; localhost responded successfully.
+
+- Added **הסרה מהמצב החדש** to proposed coverage rows. Removal clears the copy, temporary edits and exclusion, preserves the existing baseline/source/owner, updates proposed totals, and enables copying again.
+- Verified all 33 frontend unit tests and the production build. Synthetic browser regression passed against Docker, including removal of an edited/excluded copy and copying again with the baseline premium. Shared ownership is covered by the unit regression.
+- Rebuilt and recreated only the Docker web service; localhost browser check passed.
+
+# Latest update — 2026-10-03
+
+- Renamed the additional-details display label to **הוראות הסוכן** in the UI and Excel export; retained the original import header and internal field identifier for compatibility. Updated browser-check selectors.
+
+- Combined the memory-only notice and upload/workspace status into one compact inline strip with a uniform 12px font, natural wrapping on narrow screens, and the status announcement preserved.
+
+- Compacted both open forms: smaller inputs, buttons and spacing; five customer-field columns on wide screens with responsive layouts.
+- Agent details use a compact row and a completion button that collapses to the agent name/date summary, with keyboard focus returned to the summary.
+- Verified the frontend production build and all 32 frontend unit tests. No new browser visual verification was performed for this change.
+- Rebuilt and recreated the local Docker web service successfully using `docker compose up -d --build --no-deps web`.
+- Recorded the ongoing requirement in AGENTS.md and the commands in README.md: after each change, update documentation, run relevant checks, rebuild affected Docker images when needed, rerun affected services, and verify localhost.
+- Documentation-only updates do not require an image rebuild because Markdown files are excluded from the Docker build context.
+
+The checkpoint below is historical and its test counts describe earlier versions.
+
 # Project checkpoint — 2026-09-24
 
 The first-version pilot is published in [BMCPolinexo on GitHub](https://github.com/datik2012-jpg/BMCPolinexo).

@@ -42,7 +42,7 @@ with sync_playwright() as p:
     dialog = page.get_by_role('dialog')
     expect(dialog).to_contain_text('בדיקה1 משפחה1')
     dialog.get_by_label('פרמיה', exact=True).fill('25')
-    dialog.get_by_label('פרטים נוספים', exact=True).fill('בדיקה משותפת')
+    dialog.get_by_label('הוראות הסוכן', exact=True).fill('בדיקה משותפת')
     dialog.get_by_role('button', name='שמירת תיקונים', exact=True).click()
     expect(policy.locator('.policy-details')).to_contain_text('בדיקה1 משפחה1')
     expect(policy.locator('.shared-monthly-total')).to_contain_text('47.00')

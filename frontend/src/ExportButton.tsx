@@ -1,7 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Customer } from './customers';
 
+export const ExportAgentContext = createContext({ firstName: "", lastName: "", date: "" });
+
 export function ExportButton({ customers, available }: { customers: Customer[]; available: boolean }) {
+  const agent = useContext(ExportAgentContext);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -17,7 +20,7 @@ export function ExportButton({ customers, available }: { customers: Customer[]; 
     try {
       const response = await fetch('/api/export', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
-        body: JSON.stringify({ customers }), signal: abort.signal,
+        body: JSON.stringify({ customers, agent }), signal: abort.signal,
       });
       if (!response.ok) {
         const data = await response.json().catch(() => null);
@@ -41,7 +44,7 @@ export function ExportButton({ customers, available }: { customers: Customer[]; 
   }
   return <div className="export-control">
     <button type="button" disabled={!available || busy} onClick={() => void download()}>{busy ? 'מכין קובץ…' : 'ייצוא ל־Excel'}</button>
-    <small>כל הכיסויים{customers.length > 1 ? ` של ${customers.length} הלקוחות המוצגים` : ''}, כולל פרטים נוספים והחרגות</small>
+    <small>כל הכיסויים{customers.length > 1 ? ` של ${customers.length} הלקוחות המוצגים` : ''}, כולל הוראות הסוכן והחרגות</small>
     {error && <small role="alert" className="error">{error}</small>}
     {done && <small role="status">הקובץ הוכן להורדה</small>}
   </div>;

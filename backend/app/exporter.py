@@ -1,5 +1,8 @@
 """Generate portfolio snapshots entirely in memory; never interpret user text as formulas."""
 from collections import Counter
+from pathlib import Path
+from openpyxl.drawing.image import Image
+from openpyxl.worksheet.page import PageMargins
 from decimal import Decimal
 from io import BytesIO
 from math import ceil
@@ -12,7 +15,10 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .parser import FIELDS, HEADERS, normalize
+from .parser import FIELDS, HEADERS as SOURCE_HEADERS, normalize
+
+HEADERS = tuple("הוראות הסוכן" if key == "additional_details" else header
+                for key, header in zip(FIELDS, SOURCE_HEADERS))
 
 
 class ExportEntry(BaseModel):
@@ -57,7 +63,14 @@ class ExportCustomer(BaseModel):
         return value
 
 
+class ExportAgent(BaseModel):
+    firstName: str = Field(default="", max_length=100)
+    lastName: str = Field(default="", max_length=100)
+    date: str = Field(default="", max_length=10)
+
+
 class ExportRequest(BaseModel):
+    agent: ExportAgent = Field(default_factory=ExportAgent)
     customers: list[ExportCustomer] = Field(min_length=1, max_length=50)
 
     @model_validator(mode='after')
@@ -147,38 +160,67 @@ def create_export(request: ExportRequest) -> bytes:
     append_text_safe(summary, ['סכומים לפי התיקונים וההחרגות בזמן הייצוא. הסכומים השנתיים אינם תשלומים חודשיים.'])
     append_text_safe(summary, ['כל הכיסויים מיוצאים, גם אם הוסתרו בסינון. כפילויות אינן נמחקות אוטומטית.'])
     append_text_safe(summary, ['זהו צילום מצב של העבודה; שינוי פרטי כיסוי בקובץ אינו מעדכן את האפליקציה.'])
-    for sheet in book:
-        sheet.sheet_view.rightToLeft = True
-        sheet.freeze_panes = 'E2' if sheet == current else 'A2'
-        last_data_row = len(request.customers) + 1 if sheet == summary else sheet.max_row
-        sheet.auto_filter.ref = f'A1:{get_column_letter(sheet.max_column)}{last_data_row}'
-        for row in sheet:
+    # Stack all existing information on one worksheet, preserving source history.
+    combined = book.create_sheet('תיק ביטוח')
+    append_text_safe(combined, ['', 'שם פרטי של הסוכן', 'שם משפחה של הסוכן', 'תאריך'])
+    append_text_safe(combined, ['', request.agent.firstName, request.agent.lastName, request.agent.date])
+    logo = Image(Path(__file__).parent / 'assets' / 'bmc-select.jpg')
+    logo.width, logo.height = 100, 40
+    combined.add_image(logo, 'A1')
+    offsets = {}
+    header_rows = {1}
+    for source in [customers, current, original, summary]:
+        title_row = combined.max_row + 2
+        combined.cell(title_row, 1, source.title)
+        header_rows.update([title_row, title_row + 1])
+        offsets[source.title] = title_row
+        for row in source:
             for cell in row:
-                cell.font = Font(name='Arial', size=11, color='183D42')
-                cell.alignment = Alignment(vertical='top', horizontal='right', wrap_text=True)
-                if cell.row == 1:
-                    cell.fill = PatternFill('solid', fgColor='216B60')
-                    cell.font = Font(name='Arial', size=11, color='FFFFFF', bold=True)
-                elif cell.row % 2 == 0:
-                    cell.fill = PatternFill('solid', fgColor='EFF6F5')
-            sheet.row_dimensions[row[0].row].height = 42
-        for col in range(1, sheet.max_column + 1):
-            sheet.column_dimensions[get_column_letter(col)].width = 24
-    current.column_dimensions['K'].width = 60  # Notes stay alongside their coverage.
-    original.column_dimensions['S'].width = original.column_dimensions['T'].width = 60
-    customers.column_dimensions['K'].width = 60
-    summary.column_dimensions['F'].width = 50
-    for row in range(len(request.customers) + 3, summary.max_row + 1):
-        summary.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
-    for sheet in book:
-        for row in sheet:
-            lines = max((sum(max(1, ceil(len(line) / max(1, sheet.column_dimensions[cell.column_letter].width - 2)))
-                             for line in str(cell.value or '').split('\n')) for cell in row if cell.value is not None), default=1)
-            sheet.row_dimensions[row[0].row].height = min(409, max(42, lines * 16))
-    for sheet, columns, end in [(current, ['U', 'V'], current.max_row), (summary, ['D', 'E'], len(request.customers) + 1)]:
-        for col in columns:
-            for row in range(2, end + 1):
-                sheet[f'{col}{row}'].number_format = '#,##0.00 "₪"'
+                target = combined.cell(cell.row + title_row, cell.column, cell.value)
+                target.data_type = cell.data_type
+                target.number_format = cell.number_format
+    coverage_start = offsets[current.title] + 2
+    coverage_end = offsets[current.title] + current.max_row
+    new_cached = {}
+    for index in range(len(request.customers)):
+        row = offsets[summary.title] + index + 2
+        for col, source_col in [('D', 'U'), ('E', 'V')]:
+            combined[f'{col}{row}'] = f'=SUMIFS({source_col}${coverage_start}:{source_col}${coverage_end},A${coverage_start}:A${coverage_end},A{row},P${coverage_start}:P${coverage_end},"נכלל")'
+            combined[f'{col}{row}'].number_format = '#,##0.00 "₪"'
+            new_cached[f'{col}{row}'] = cached[f'{col}{index + 2}']
+    cached = new_cached
+    for source in [customers, current, original, summary]:
+        book.remove(source)
+    combined.sheet_view.rightToLeft = True
+    combined.freeze_panes = f'E{coverage_start}'
+    combined.auto_filter.ref = f'A{coverage_start - 1}:V{coverage_end}'
+    for col in range(1, combined.max_column + 1):
+        combined.column_dimensions[get_column_letter(col)].width = 18
+    for col in ['K', 'S', 'T']:
+        combined.column_dimensions[col].width = 32
+    for row in combined:
+        for cell in row:
+            heading = cell.row in header_rows
+            cell.font = Font(name='Arial', size=9, color='FFFFFF' if heading else '183D42', bold=heading)
+            cell.alignment = Alignment(vertical='center', horizontal='right', wrap_text=True)
+            if heading or cell.row % 2 == 0:
+                cell.fill = PatternFill('solid', fgColor='216B60' if heading else 'EFF6F5')
+        lines = max((sum(max(1, ceil(len(line) / max(1, combined.column_dimensions[cell.column_letter].width - 2)))
+                         for line in str(cell.value or '').split('\n')) for cell in row if cell.data_type != 'f'), default=1)
+        combined.row_dimensions[row[0].row].height = min(409, max(15, lines * 12))
+    combined.row_dimensions[1].height = 21
+    combined.row_dimensions[2].height = 21
+    for row in range(coverage_start, coverage_end + 1):
+        for col in ['U', 'V']:
+            combined[f'{col}{row}'].number_format = '#,##0.00 "₪"'
+    combined.sheet_properties.pageSetUpPr.fitToPage = True
+    combined.page_setup.orientation = 'landscape'
+    combined.page_setup.paperSize = combined.PAPERSIZE_A4
+    combined.page_setup.fitToWidth = 1
+    combined.page_setup.fitToHeight = 1
+    combined.print_options.horizontalCentered = True
+    combined.page_margins = PageMargins(left=0.2, right=0.2, top=0.2, bottom=0.2, header=0, footer=0)
+    combined.print_area = combined.dimensions
     output = BytesIO()
     book.save(output)
     # Cache Decimal-computed formula results for previewers; Excel recalculates on open.
@@ -187,7 +229,7 @@ def create_export(request: ExportRequest) -> bytes:
     with ZipFile(output) as source, ZipFile(result, 'w', ZIP_DEFLATED) as target:
         for item in source.infolist():
             data = source.read(item.filename)
-            if item.filename == 'xl/worksheets/sheet4.xml':
+            if item.filename == 'xl/worksheets/sheet1.xml':
                 root = ET.fromstring(data)
                 for cell in root.findall('.//s:c', ns):
                     if cell.attrib['r'] in cached:
