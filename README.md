@@ -121,7 +121,7 @@ To check all 26 logos and RTL policy-card layout at desktop and narrow widths ag
 
 ## Shared customer view
 
-Select at least two customers with imported reports using the checkboxes above the customer forms, then choose **הצגת הלקוחות יחד**. Names and family names do not need to match. **חזרה לתצוגה נפרדת** returns to the individual portfolios.
+The compact **הצגת לקוחות יחד** bar appears immediately below **+ הוסף לקוח נוסף** when the workspace has more than one customer. Its heading, customer checkboxes and actions share a row on wide screens and wrap on narrow screens; the active-view indicator also uses compact spacing. Select at least two customers with imported reports, then choose **הצגת הלקוחות יחד**. Names and family names do not need to match. **חזרה לתצוגה נפרדת** returns to the individual portfolios.
 
 The shared view places coverages with the same insurer and exact policy number in one policy card, while incomplete identification keys remain separate. It preserves every coverage, including zero premiums and suspected duplicates. Customer names identify coverage rows, additional details, source records, and editing dialogs. Edits and exclusions update only the owning customer's report. Each customer retains separate totals, including filtered totals and original-source totals. Shared policy headers also display a combined monthly total for the displayed, non-excluded coverages; annual premiums are not included in that monthly amount. Matching policy numbers do not trigger premium deduplication.
 

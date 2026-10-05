@@ -221,13 +221,18 @@ main {
 .export-control { display: flex; flex-direction: column; gap: 5px; max-width: 260px; }
 .export-control small { color: #526a7d; overflow-wrap: anywhere; }
 .section-heading { flex-wrap: wrap; }
-.shared-selection { background: white; border: 1px solid #dbe5e6; border-radius: 14px; padding: 20px; margin-bottom: 24px; }
-.shared-selection button { margin-inline-end: 10px; margin-top: 12px; }
-.shared-active-indicator { display: flex; flex-direction: column; gap: 5px; padding: 12px 16px; margin: 16px 0 0; background: #edf8f1; color: #21613e; border: 1px solid #b6d8c6; border-inline-start: 4px solid #008eaa; border-radius: 8px; overflow-wrap: anywhere; }
+.shared-selection { background: white; border: 1px solid #dbe5e6; border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; font-size: 12px; }
+.shared-selection-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.shared-selection h2 { font-size: 14px; }
+.shared-selection > .muted { margin-top: 4px; font-size: 12px; }
+.shared-selection-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.shared-selection button { min-height: 30px; padding: 4px 9px; font-size: 12px; }
+.shared-active-indicator { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 4px 8px; margin-top: 6px; background: #edf8f1; color: #21613e; border: 1px solid #b6d8c6; border-inline-start: 3px solid #008eaa; border-radius: 5px; overflow-wrap: anywhere; }
+.shared-active-indicator small { flex-basis: 100%; }
 .shared-selection .shared-view-active { background: #216b60; border-color: #216b60; color: white; }
-.shared-customer-options { display: flex; flex-wrap: wrap; gap: 16px; }
-.shared-customer-options label { display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
-.shared-customer-options input { width: 18px; min-height: 18px; flex-shrink: 0; accent-color: #008eaa; }
+.shared-customer-options { display: flex; flex: 1 1 220px; min-width: 0; flex-wrap: wrap; gap: 4px 12px; }
+.shared-customer-options label { display: flex; align-items: center; gap: 5px; min-width: 0; min-height: 28px; overflow-wrap: anywhere; }
+.shared-customer-options input { width: 16px; height: 16px; min-height: 16px; margin: 0; flex-shrink: 0; accent-color: #008eaa; }
 .shared-policy-totals { min-width: 0; overflow-wrap: anywhere; }
 .shared-policy-totals > div + div { margin-top: 8px; }
 .shared-policy-totals small { display: block; color: #576e80; }
@@ -745,7 +750,7 @@ h2 { font-size: 17px; }
 .customer-upload small { color: #526a7d; }
 .upload-success { padding: 3px 7px; font-size: 12px; background: #edf8fa; border-color: #bddfe6; color: #006e83; }
 .add-customer-row { margin-bottom: 12px; padding-inline: 0; }
-.shared-selection { padding: 12px; margin-bottom: 12px; }
+.add-customer-row:has(+ .shared-selection) { margin-bottom: 6px; }
 .customer-section { margin-bottom: 18px; padding-bottom: 12px; }
 .portfolio-navigation { display: flex; align-items: center; gap: 10px; margin-top: 16px; margin-bottom: 8px; }
 .portfolio-navigation [role="tablist"] { display: flex; gap: 4px; padding: 3px; background: #eaf0f5; border-radius: 9px; }

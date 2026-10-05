@@ -214,24 +214,6 @@ export default function App() {
               }}>סיום עריכה</button>
             </section>
             </details>
-            {customers.length > 1 && <section className="shared-selection" aria-label="בחירת לקוחות לתצוגה משותפת">
-              <h2>הצגת לקוחות יחד</h2>
-              <p className="muted">בחרו לפחות שני לקוחות עם דוח. פוליסות עם אותה חברה ואותו מספר יוצגו יחד; הסכומים יישארו נפרדים לכל לקוח.</p>
-              <div className="shared-customer-options">
-                {displayedCustomers.map((c, index) => <label key={c.id}>
-                  <input type="checkbox" disabled={!c.report} checked={selectedCustomers.includes(c.id)}
-                    onChange={event => setSelectedCustomers(ids => event.target.checked ? [...ids, c.id] : ids.filter(id => id !== c.id))} />
-                  <span>{[c.details.firstName, c.details.lastName].filter(Boolean).join(' ') || `לקוח ${index + 1}`}{!c.report && ' · יש להעלות דוח'}</span>
-                </label>)}
-              </div>
-              {showShared && <p role="status" className="shared-active-indicator">
-                <strong>✓ תצוגה משותפת פעילה · {shared.length} לקוחות</strong>
-                <span>{shared.map(c => `${c.details.firstName} ${c.details.lastName}`.trim()).join(' · ')}</span>
-                {!selectionIsShown && <small>הבחירה השתנתה. לחצו על הצגת הלקוחות יחד כדי לעדכן את התצוגה.</small>}
-              </p>}
-              <button type="button" className={selectionIsShown ? 'shared-view-active' : ''} aria-pressed={selectionIsShown} disabled={selected.length < 2} onClick={() => setSharedCustomers(selected.map(c => c.id))}>הצגת הלקוחות יחד · {selected.length}</button>
-              {showShared && <button type="button" onClick={() => setSharedCustomers([])}>חזרה לתצוגה נפרדת</button>}
-            </section>}
             {displayedCustomers.map(customer => <div key={customer.id}>
               <CustomerForm customer={customer} disabled={!available || busy}
                 duplicate={customers.some(c => c.id !== customer.id && sameIdentity(c.details.identity, customer.details.identity))}
@@ -246,10 +228,34 @@ export default function App() {
                   });
                 }}
                 onUpload={file => void upload(customer, file)} />
-              {customer.id === customers[customers.length - 1].id && <div className="add-customer-row">
-                <button type="button" onClick={() => setCustomers(all => [...all, newCustomer()])}>+ הוסף לקוח נוסף</button>
-                <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
-              </div>}
+              {customer.id === customers[customers.length - 1].id && <>
+                <div className="add-customer-row">
+                  <button type="button" onClick={() => setCustomers(all => [...all, newCustomer()])}>+ הוסף לקוח נוסף</button>
+                  <small className="muted">בן/בת זוג, ילדים ובני משפחה נוספים · תיק נפרד לכל לקוח</small>
+                </div>
+                {customers.length > 1 && <section className="shared-selection" aria-label="בחירת לקוחות לתצוגה משותפת">
+                  <div className="shared-selection-controls">
+                    <h2>הצגת לקוחות יחד</h2>
+                    <div className="shared-customer-options">
+                      {displayedCustomers.map((c, index) => <label key={c.id}>
+                        <input type="checkbox" disabled={!c.report} checked={selectedCustomers.includes(c.id)}
+                          onChange={event => setSelectedCustomers(ids => event.target.checked ? [...ids, c.id] : ids.filter(id => id !== c.id))} />
+                        <span>{[c.details.firstName, c.details.lastName].filter(Boolean).join(' ') || `לקוח ${index + 1}`}{!c.report && ' · יש להעלות דוח'}</span>
+                      </label>)}
+                    </div>
+                    <div className="shared-selection-actions">
+                      <button type="button" className={selectionIsShown ? 'shared-view-active' : ''} aria-pressed={selectionIsShown} disabled={selected.length < 2} onClick={() => setSharedCustomers(selected.map(c => c.id))}>הצגת הלקוחות יחד · {selected.length}</button>
+                      {showShared && <button type="button" onClick={() => setSharedCustomers([])}>חזרה לתצוגה נפרדת</button>}
+                    </div>
+                  </div>
+                  <p className="muted">בחרו לפחות שני לקוחות עם דוח · פוליסות תואמות יוצגו יחד; הסכומים נשארים נפרדים לכל לקוח.</p>
+                  {showShared && <p role="status" className="shared-active-indicator">
+                    <strong>✓ תצוגה משותפת פעילה · {shared.length} לקוחות</strong>
+                    <span>{shared.map(c => `${c.details.firstName} ${c.details.lastName}`.trim()).join(' · ')}</span>
+                    {!selectionIsShown && <small>הבחירה השתנתה. לחצו על הצגת הלקוחות יחד כדי לעדכן את התצוגה.</small>}
+                  </p>}
+                </section>}
+              </>}
             </div>)}
             {showShared && <section className="shared-portfolio" aria-label="תיקי הביטוח בתצוגה משותפת">
               <SharedPortfolio key={shared.map(c => `${c.id}-${c.revision || 0}`).join('|')}

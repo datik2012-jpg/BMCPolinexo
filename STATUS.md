@@ -1,3 +1,10 @@
+# Compact shared customer selector — 2026-10-05
+
+- Moved **הצגת לקוחות יחד** immediately below **+ הוסף לקוח נוסף**, keeping them adjacent when customer cards are reordered or removed.
+- Compacted the heading, selection controls, helper text, buttons and active-view indicator into wrapping RTL rows. With two synthetic customers, the desktop bar measures 70px inactive and 104px active.
+- Verified all 33 frontend tests and the Docker production build. Synthetic browser checks passed at 1440, 768, 390 and 320px: placement, no horizontal overflow, upload gating, shared/separate switching, preserved selections after reordering/removal, and refresh clearing. Reviewed desktop/mobile screenshots under ignored `test-results/`.
+- Rebuilt/recreated only web; API remained healthy without restarting. Localhost returned HTTP 200. Updated README.
+
 # Version v1.2.0 — New Excel presentation — 2026-10-04
 
 - GitHub checkpoint for the compact existing/proposed Excel presentation, coverage and insured dropdowns, proportional insurer logos, full family export, and hidden source/calculation sheets.
