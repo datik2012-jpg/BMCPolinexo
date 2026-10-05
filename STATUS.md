@@ -1,3 +1,93 @@
+# Windows installer 1.2.1 — 2026-10-05
+
+- Merged `main` through `5d0140a` into `feature/windows-installer`. Release tag: `v1.2.1-windows`. Main is unchanged.
+- Built one per-user x64 installer for Windows 10 and Windows 11, including the compact shared-customer selector, existing/proposed workflow and compact Excel dropdown export. Added an explicit manifest and frozen-bundle verification for the 28 backend export assets.
+- Updated the packaged browser checks for explicit coverage copying, current customer order, category labels and assigned localhost URLs. All 32 backend/runtime tests, 33 frontend tests and seven browser suites passed.
+- On Windows 10 build 19045, verified non-admin Hebrew-path installation, both shortcuts, duplicate-launch behavior, running-app guards, upgrade from 1.1.0 to 1.2.1, installed hashes, real export, close/restart/crash clearing and uninstall cleanup. Audited all 1,066 bundled files and local/remote Git history for Excel files.
+- Installer: `dist/releases/1.2.1/BMCPolinexo-Setup.exe` (19,303,902 bytes). SHA-256: `70448a91fc9800a7199f3a0b6db281c44de84bdc3cb52c4e02d2e2d5de8552f3`. Install notes and `SHA256SUMS.txt` are beside it; binaries are ignored by Git.
+- Updated Docker API/web services and verified localhost HTTP 200. The installer is unsigned; clean-machine Windows 10/11 and visual/high-DPI checks remain pending. See [Windows verification](docs/WINDOWS.md).
+
+# Compact shared customer selector — 2026-10-05
+
+- Moved **הצגת לקוחות יחד** immediately below **+ הוסף לקוח נוסף**, keeping them adjacent when customer cards are reordered or removed.
+- Compacted the heading, selection controls, helper text, buttons and active-view indicator into wrapping RTL rows. With two synthetic customers, the desktop bar measures 70px inactive and 104px active.
+- Verified all 33 frontend tests and the Docker production build. Synthetic browser checks passed at 1440, 768, 390 and 320px: placement, no horizontal overflow, upload gating, shared/separate switching, preserved selections after reordering/removal, and refresh clearing. Reviewed desktop/mobile screenshots under ignored `test-results/`.
+- Rebuilt/recreated only web; API remained healthy without restarting. Localhost returned HTTP 200. Updated README.
+
+# Version v1.2.0 — New Excel presentation — 2026-10-04
+
+- GitHub checkpoint for the compact existing/proposed Excel presentation, coverage and insured dropdowns, proportional insurer logos, full family export, and hidden source/calculation sheets.
+- Includes the follow-up UI fix that hides zero annual totals and differences while preserving nonzero annual amounts, warnings and source data.
+- Validation recorded below: 25 backend tests, 33 frontend tests, production build, browser export/proposal checks, and native Excel dropdown/recalculation/save-reopen checks passed. Local Docker services are running and localhost responds.
+- Customer workbooks, screenshots, source prompts and generated test artifacts are excluded from this version.
+
+# Hide zero annual UI amounts — 2026-10-04
+
+- Annual values of zero are hidden in current/proposed totals, filtered/source totals, shared-policy customer summaries and source-comparison differences. Nonzero amounts and incomplete-data warnings remain visible. Monthly amounts, coverage source values and Excel data are unchanged.
+- Summary grids collapse the unused annual column on desktop and mobile. Recorded this display rule in AGENTS.md and README.
+- Verified all 33 frontend tests, production build and browser proposal/export regressions, including changing a monthly premium to a nonzero annual premium and back, zero annual differences, and shared monthly-only policy headers.
+- Rebuilt/recreated only web. Localhost responds successfully; API was not restarted.
+
+# Coverage dropdowns — 2026-10-04
+
+- Replaced the expanded coverage text in both Excel states with a native **כיסויים** dropdown per policy. The initial cell shows the category (or a coverage-count heading), with the policy's coverage names in its menu. Selection changes presentation only; the insured selector continues to control the premium.
+- Coverage count no longer adds visible rows or increases policy-row height. Ordinary policy rows are 32 points; agent notes retain their wrapping/continuation behavior. Full coverage dates, categories, ownership and source rows remain in the hidden history. Repeated menu labels do not deduplicate coverage premiums.
+- Verified 25 backend tests, including 40 coverages in one compact row per state, duplicate premiums and state-specific choices. Desktop Excel passed eight coverage choices and six insured choices, unchanged totals and save/reopen. Reviewed the native Excel print rendering and passed the real browser download regression with both dropdown types.
+- Rebuilt/recreated only the API service; the web service was left running. Localhost export and page checks passed.
+
+# Compact Excel export — 2026-10-04
+
+- Implemented the requested two-state compact report based on the supplied text and the header/compact reference workbooks in Downloads. Reference files and their example data remain outside Git and Docker.
+- All family customer cards are exported, including cards without uploads. Existing and explicitly copied proposed coverages have separate grouped tables, private/general sections and agent notes. Seven logical RTL columns preserve the specified order. Catalog logos retain their proportions.
+- Native Excel list validation selects each row's family or individual premium. Family and selection totals are distinct, annual premiums remain separate, incomplete data is flagged, zero/duplicate/excluded rows remain traceable, and hidden inputs/history retain ownership and source references. Long notes use continuation rows.
+- Verification: 23 backend tests and 33 frontend tests passed; the production build passed. Browser export regression verified real downloads, all customer cards, state/notes separation, single/shared initial selections, logos, responsive RTL, errors and refresh clearing. The proposal browser regression also passed.
+- Desktop Excel verification passed all six selector choices across both states, unchanged family totals, no formula errors, and save/reopen preservation. Excel's two-page print rendering was inspected; coverage clipping found during review was fixed. The test dismisses an activation wizard only in its own automation instance. Failed test instances were cleaned up; the pre-existing user Excel window was left open.
+- Rebuilt API and web Docker images and recreated their services. API is healthy; `http://127.0.0.1:8080` returns HTTP 200. All artifacts used for verification are synthetic and ignored.
+
+# Latest update — 2026-10-04
+
+## New features and UI — new status added
+
+- GitHub checkpoint includes the existing/proposed-state workflow, explicit coverage copying and removal, insurance category display, compact RTL forms and totals, header logo positioning, and branded single-worksheet Excel export.
+- Checkpoint verification: 20 backend tests, 33 frontend tests, and the synthetic proposal browser check passed. The web production build and desktop/mobile logo placement were verified; local Docker services remain available.
+
+- Moved the header logo to the top-right corner with an 8px inset and natural image aspect ratio. Updated README; Docker production build passed, rebuilt/recreated only web, and browser checks at 1280px and 375px verified the inset and localhost HTTP 200.
+
+- Agent date now defaults to the current local calendar date on opening/reset, while remaining editable. Reopening the form preserves the selected date. Updated README; all 33 frontend tests and Docker production build passed. Rebuilt/recreated only web and verified localhost HTTP 200.
+
+- Removed the annual amount from individual policy headers in existing and proposed views. Annual data and totals remain preserved. Updated README; all 33 frontend tests and Docker production build passed. Recreated only web and verified localhost HTTP 200 and the updated served bundle.
+
+- Removed the **תוקן** label from coverage actions while preserving correction tracking and source comparison. Docker production build passed; only web was recreated. Localhost returned HTTP 200 and the served JavaScript no longer contains the label.
+
+- Aligned the return-to-policies button inside expanded source rows to the left in RTL. Updated README; Docker production build passed, only web was recreated, and localhost returned HTTP 200.
+
+- Restored left alignment for the coverage action buttons and their column heading in both existing and proposed views, preserving RTL button order.
+- Verified the production build in Docker and the synthetic proposal browser workflow on localhost, including computed alignment and button positioning in both views. Rebuilt and recreated only the web service.
+
+- Follow-up: verified the instructions appear below the source line, start expanded, and close/reopen on click. All 33 frontend tests, production build, and the synthetic browser check passed. Rebuilt only the web service and verified localhost through the browser check.
+
+- Removed the numeric Excel identifier warning while preserving explicit identifier zero-padding. Moved **הוראות הסוכן** into **בדיקה ומקור**, below the source row/sheet, with a bold heading and a collapsible section open by default.
+- Verified 20 backend tests, 33 frontend tests, production build, and the synthetic proposal browser check including visible instructions in the source column. Rebuilt and updated API/web Docker services; localhost responded successfully.
+
+- Added **הסרה מהמצב החדש** to proposed coverage rows. Removal clears the copy, temporary edits and exclusion, preserves the existing baseline/source/owner, updates proposed totals, and enables copying again.
+- Verified all 33 frontend unit tests and the production build. Synthetic browser regression passed against Docker, including removal of an edited/excluded copy and copying again with the baseline premium. Shared ownership is covered by the unit regression.
+- Rebuilt and recreated only the Docker web service; localhost browser check passed.
+
+# Latest update — 2026-10-03
+
+- Renamed the additional-details display label to **הוראות הסוכן** in the UI and Excel export; retained the original import header and internal field identifier for compatibility. Updated browser-check selectors.
+
+- Combined the memory-only notice and upload/workspace status into one compact inline strip with a uniform 12px font, natural wrapping on narrow screens, and the status announcement preserved.
+
+- Compacted both open forms: smaller inputs, buttons and spacing; five customer-field columns on wide screens with responsive layouts.
+- Agent details use a compact row and a completion button that collapses to the agent name/date summary, with keyboard focus returned to the summary.
+- Verified the frontend production build and all 32 frontend unit tests. No new browser visual verification was performed for this change.
+- Rebuilt and recreated the local Docker web service successfully using `docker compose up -d --build --no-deps web`.
+- Recorded the ongoing requirement in AGENTS.md and the commands in README.md: after each change, update documentation, run relevant checks, rebuild affected Docker images when needed, rerun affected services, and verify localhost.
+- Documentation-only updates do not require an image rebuild because Markdown files are excluded from the Docker build context.
+
+The checkpoint below is historical and its test counts describe earlier versions.
+
 # Project checkpoint — 2026-09-24
 
 The first-version pilot is published in [BMCPolinexo on GitHub](https://github.com/datik2012-jpg/BMCPolinexo).

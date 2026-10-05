@@ -2,7 +2,7 @@
   #error Build with Inno Setup 6.5.4
 #endif
 #ifndef AppVersion
-  #define AppVersion "1.1.0"
+  #define AppVersion "1.2.1"
 #endif
 #ifndef BundleDir
   #error BundleDir is required

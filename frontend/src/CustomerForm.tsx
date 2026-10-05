@@ -1,5 +1,5 @@
 import { Customer, CustomerDetails, customerReady, insuranceAge, displayBirthDate, parseBirthDateInput, validBirthDate } from './customers';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 
 export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove, onUpload }: {
   customer: Customer; disabled: boolean; duplicate: boolean;
@@ -7,6 +7,8 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
   onRemove: () => void; onUpload: (file?: File) => void;
 }) {
   const d = customer.details;
+  const [editing, setEditing] = useState(() => !customerReady(customer.details));
+  const formId = useId();
   const birthDateId = useId();
   const calendar = useRef<HTMLInputElement>(null);
   const today = new Date();
@@ -29,8 +31,12 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
     <fieldset disabled={disabled}>
       <div className="customer-heading">
         <h2>{d.firstName.trim() ? `${d.firstName} ${d.lastName}` : 'לקוח חדש'}</h2>
+        <span className="customer-identity">ת״ז <bdi>{d.identity || 'טרם הוזנה'}</bdi></span>
+        <span className="coverage-count">{customer.report?.entries.length || 0} כיסויים</span>
+        <button type="button" aria-expanded={editing} aria-controls={formId} onClick={() => setEditing(!editing)}>{editing ? 'סגירת פרטים' : 'עריכת לקוח'}</button>
         <button type="button" onClick={onRemove}>הסרת לקוח</button>
       </div>
+      <div id={formId} hidden={!editing}>
       <div className="customer-fields">
         {select('relationship', 'קרבה משפחתית', ['לקוח ראשי', 'בן/בת זוג', 'ילד/ה', 'בן משפחה אחר'])}
         {field('firstName', 'שם פרטי')}
@@ -66,7 +72,9 @@ export function CustomerForm({ customer, disabled, duplicate, onChange, onRemove
         {select('maritalStatus', 'מצב משפחתי', ['רווק/ה', 'נשוי/אה', 'גרוש/ה', 'אלמן/ה', 'פרוד/ה', 'ידוע/ה בציבור'])}
       </div>
       {duplicate && <p className="warning">כבר קיים לקוח עם תעודת זהות זו.</p>}
-      {customer.report && <p className="muted">הדוח נטען · {customer.report.entries.length} כיסויים. העלאה חדשה תחליף רק את הדוח והתיקונים של לקוח זה.</p>}
+      <button type="button" className="primary customer-done" disabled={!ready} onClick={() => setEditing(false)}>סיום עריכה</button>
+      </div>
+      {editing && customer.report && <p className="muted">הדוח נטען · {customer.report.entries.length} כיסויים. העלאה חדשה תחליף רק את הדוח והתיקונים של לקוח זה.</p>}
       <div className="customer-upload">
         <label className={'button primary upload-button' + (!ready ? ' upload-disabled' : '')}>
           <svg className="upload-mountain" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true"><path d="M2 20 10 4l5 10 3-5 4 11H2Z" /><path d="m7 10 3 2 3-2" /></svg>

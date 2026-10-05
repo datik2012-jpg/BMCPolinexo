@@ -33,3 +33,6 @@ frontend/public/**
 **/*.[xX][lL][sS]*
 **/*.[xX][lL][tT]*
 **/*.[xX][lL][aA]*
+!backend/app/assets/bmc-select.jpg
+
+!backend/app/assets/insurers/*.png

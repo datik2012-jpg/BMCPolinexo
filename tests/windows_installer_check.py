@@ -38,7 +38,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--baseline', type=Path, required=True)
     parser.add_argument('--installer', type=Path, required=True)
-    parser.add_argument('--version', default='1.1.0')
+    parser.add_argument('--version', default='1.2.1')
     args = parser.parse_args()
     assert not installed_version(), 'Existing installation detected: use a separate test user'
     assert not ctypes.windll.shell32.IsUserAnAdmin(), 'Run this test without administrator elevation'

@@ -15,6 +15,11 @@ for file in sorted(web.rglob('*')):
 if not (web / 'index.html').is_file():
     raise ValueError('Build the frontend before packaging.')
 
+# Explicit export assets must retain their paths beside frozen app modules.
+for relative in (root / 'packaging/windows/backend-assets.txt').read_text(encoding='utf-8').splitlines():
+    file = root / relative
+    datas.append((str(file), str(file.relative_to(root / 'backend').parent)))
+
 # Retain redistribution notices without collecting unrelated project files.
 datas.append((str(Path(sys.base_prefix) / 'LICENSE.txt'), 'licenses/python'))
 for package in ['react', 'react-dom', 'scheduler', 'decimal.js']:

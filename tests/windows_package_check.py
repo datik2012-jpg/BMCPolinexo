@@ -110,7 +110,7 @@ def main():
         if not args.skip_browser_suite:
             env = dict(os.environ, BMC_URL=url, BMC_TEST_DESKTOP='1')
             env.pop('BMC_TEST_DOCKER_RESTART', None)
-            for name in ['browser', 'family', 'shared', 'export', 'category_filter', 'insurer_logos']:
+            for name in ['browser', 'family', 'shared', 'export', 'proposal', 'category_filter', 'insurer_logos']:
                 subprocess.run([sys.executable, str(ROOT / 'tests' / (name + '_check.py'))], env=env, check=True, timeout=240)
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch()
@@ -128,7 +128,7 @@ def main():
             page = context.new_page()
             page.goto(url)
             expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
-            fill_customer(page.locator('.customer-card').first)
+            fill_customer(page.get_by_role('region', name='פרטי לקוח', exact=True).first)
             page.get_by_label('העלאת קובץ Excel הר ביטוח', exact=True).set_input_files({
                 'name': 'synthetic.xlsx', 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'buffer': fixture_module.fixture(),
@@ -149,7 +149,7 @@ def main():
             expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
             expect(page.locator('.policy')).to_have_count(0)
             assert page.evaluate('localStorage.length + sessionStorage.length') == 0
-            fill_customer(page.locator('.customer-card').first)
+            fill_customer(page.get_by_role('region', name='פרטי לקוח', exact=True).first)
             process.kill()
             process.wait(timeout=10)
             expect(page.get_by_label('שם פרטי', exact=True)).to_have_value('', timeout=15000)

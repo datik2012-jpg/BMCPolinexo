@@ -37,6 +37,15 @@ def verify_bundle(bundle):
     if not (bundle / 'BMCPolinexo.exe').is_file():
         raise ValueError('Packaged executable is missing.')
     count = verify_web(bundle / '_internal/web')
+    assets = [Path(line) for line in Path(__file__).with_name('backend-assets.txt').read_text(encoding='utf-8').splitlines() if line]
+    expected = {p.relative_to('backend/app/assets').as_posix(): ROOT / p for p in assets}
+    bundled_assets = bundle / '_internal/app/assets'
+    actual = {p.relative_to(bundled_assets).as_posix(): p for p in bundled_assets.rglob('*') if p.is_file()}
+    if set(actual) != set(expected):
+        raise ValueError('Bundled Excel export assets do not match the approved manifest.')
+    for relative, source in expected.items():
+        if actual[relative].read_bytes() != source.read_bytes():
+            raise ValueError('An approved Excel export asset changed during packaging: ' + relative)
     entries = []
     for file in sorted(bundle.rglob('*')):
         if not file.is_file():
@@ -49,7 +58,7 @@ def verify_bundle(bundle):
         entries.append({'path': relative.as_posix(), 'sha256': hashlib.sha256(file.read_bytes()).hexdigest()})
     # Build evidence lives beside the bundle, never inside the installed app.
     bundle.with_name('bundle-manifest.json').write_text(json.dumps(entries, indent=2), encoding='utf-8')
-    print(f'PASS: {len(entries)} bundle files audited, including {count} approved web files.')
+    print(f'PASS: {len(entries)} bundle files audited, including {count} approved web files and {len(expected)} Excel export assets.')
 
 
 if __name__ == '__main__':

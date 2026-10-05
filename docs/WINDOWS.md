@@ -1,5 +1,14 @@
 # Windows package
 
+## Release 1.2.1 — 2026-10-05
+
+One installer supports both Windows 10 and Windows 11 x64. This release merges
+`main` at `5d0140a` into `feature/windows-installer`; its tag is `v1.2.1-windows`.
+It includes the compact shared-customer selector, existing/proposed coverage
+workflow and compact Excel export with coverage/person dropdowns and logos.
+The Windows localhost launcher and connection-loss clearing remain enabled.
+
+
 ## Employee installation
 
 Target: Windows 10/11 x64 (Intel/AMD), one local employee session per Windows
@@ -39,9 +48,9 @@ Install Python 3.12 x64 (including Tcl/Tk), Node.js 22, Git, and Inno Setup
 Build from a full Git clone; release builds should use a clean reviewed checkout.
 
 ```powershell
-./packaging/windows/build.ps1 -Version 1.1.0
+./packaging/windows/build.ps1 -Version 1.2.1
 # If Inno Setup is installed elsewhere:
-./packaging/windows/build.ps1 -Version 1.1.0 -Iscc 'C:/path/to/ISCC.exe'
+./packaging/windows/build.ps1 -Version 1.2.1 -Iscc 'C:/path/to/ISCC.exe'
 ```
 
 The script creates `.build-venv`, installs pinned runtime/build dependencies,
@@ -51,11 +60,13 @@ installer preprocessor. Outputs:
 
 - `dist/windows/BMCPolinexo/`: runnable folder including Python and Tcl/Tk.
 - `dist/windows/bundle-manifest.json`: relative file paths and SHA-256 hashes.
-- `dist/releases/1.1.0/BMCPolinexo-Setup.exe`: employee installer; the build prints
+- `dist/releases/1.2.1/BMCPolinexo-Setup.exe`: employee installer; the build prints
   its SHA-256 hash. Distribute it through the organization's approved channel.
 
 No repository-wide data glob is used. The backend is collected as Python
-modules; frontend files are limited to generated HTML/JS/CSS and the approved
+modules; Excel export logos and the insurer catalog are explicitly listed in
+`packaging/windows/backend-assets.txt` and verified byte-for-byte in the frozen
+bundle. Frontend files are limited to generated HTML/JS/CSS and the approved
 logo paths in `packaging/windows/public-assets.txt`. Changes to that manifest
 require review. Tests, screenshots, workbooks, prompts and build tools are not
 included. The folder audit rejects Excel and common source/private artifacts.
@@ -91,14 +102,14 @@ npm test
 ```
 
 Against a running packaged app, set `BMC_URL` to its localhost URL and set
-`BMC_TEST_DESKTOP=1`, then run all `tests/*_check.py` browser scripts with the
+`BMC_TEST_DESKTOP=1`, then run the seven browser suites listed in `tests/windows_package_check.py` with the
 existing test environment. Those cover imports, grouping, decimal totals,
 corrections, exclusions, exports, family/shared views, all logos, RTL/mobile,
 refresh, offline clearing and instance changes. Runtime unit tests exercise
 actual loopback startup/shutdown and Windows named-object coordination.
 
 The Windows packaged acceptance harness discovers the executable's assigned
-port, runs all six browser suites, tests repeated launches and actual
+port, runs all seven browser suites, tests repeated launches and actual
 close/restart/crash clearing, and compares application files before/after:
 
 ```powershell
@@ -138,6 +149,36 @@ with a standard user and no development tools:
 
 Record OS build, user privilege, installer hash and pass/fail results. A build
 on a development machine alone does not satisfy this clean-machine gate.
+
+## Verification recorded on 2026-10-05
+
+Installer: **1.2.1**, 19,303,902 bytes, Windows 10/11 x64. SHA-256:
+`70448a91fc9800a7199f3a0b6db281c44de84bdc3cb52c4e02d2e2d5de8552f3`.
+
+Passed on Windows 10 build 19045 under a non-elevated user:
+
+- All 32 backend/Windows runtime tests and all 33 frontend tests.
+- Node.js 22.23.3 production build, Python 3.12.10/PyInstaller 6.22.0 bundle,
+  Inno Setup 6.5.4 installer, and an audit of 1,066 bundled files. All 30 web
+  files and 28 explicitly listed Excel export assets are present and verified.
+- All seven browser suites against the installed executable: imports/decimal
+  totals/corrections, family, shared view, real Excel download, proposal state,
+  category filters and 26 insurer logos. Every suite respects the packaged URL.
+- Non-admin install into a Hebrew/space path, both shortcuts, repeated launch,
+  running-app upgrade/uninstall refusal, actual upgrade from 1.1.0 to 1.2.1,
+  obsolete runtime removal, and installed payload hashes matching the manifest.
+- Real close/restart/crash clearing, closed listening port, no external app
+  requests, unchanged runtime files, and operation without development tools
+  on the child process PATH. Uninstall removes the app/shortcuts/registry entry
+  while preserving an unrelated file outside the application directory.
+- Local and remote Git history/Excel ignore audit. Rebuilt API/web Docker
+  services; API healthy and `http://127.0.0.1:8080` returned HTTP 200.
+
+The installer remains unsigned. Clean Windows 10/11 machines without developer
+tools, high-DPI launcher appearance and multiple Windows users still require
+separate-PC acceptance using [the checklist](WINDOWS-PC-CHECKLIST.md). These
+results do not claim Windows 11 execution. The detailed log is ignored at
+`test-results/windows-installer-1.2.1-validation.log`.
 
 ## Verification recorded on 2026-09-27
 

@@ -36,3 +36,6 @@ Reviewed 2026-09-24. The UI bundles 26 insurer and insurance-brand logos locally
 ## Maintenance
 
 Add a verified local image, catalog entry and unambiguous aliases when another name appears. Do not automatically replace historical company names with a successor company. Check `npm test` and `npm run build` in `frontend`, then run `.venv\Scripts\python.exe tests/insurer_logos_check.py` against the running pilot. Browser checks use synthetic data only.
+
+
+Excel export uses raster copies in `backend/app/assets/insurers/` and an alias catalog derived from `frontend/src/insurers.ts`. PNG originals are copied unchanged; SVG artwork is rendered to transparent PNG with Chromium at 2x resolution. These are display-only aliases and never determine policy grouping. Export scales each image proportionally within its row. When updating a source logo or alias, update the export asset/catalog too. Unknown insurers retain their name with an empty logo cell.
