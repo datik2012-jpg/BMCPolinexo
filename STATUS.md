@@ -6,7 +6,10 @@ ad-hoc signing, allowlisted asset audits, and an ARM macOS GitHub Actions build.
 Shared desktop serving, browser disconnect clearing and browser checks are taken
 from the reviewed Windows branch. No Windows-only runtime is included.
 
-Validation is in progress; an actual Mac build is required before delivery.
+The first macOS 15.7.9 arm64 build passed signatures, DMG installation, 52 backend
+and 33 frontend tests, and all seven packaged browser suites. Its shutdown check
+found an AppKit asynchronous termination wait; the launcher now uses a bounded
+synchronous shutdown. Full package revalidation is in progress.
 See [MACOS.md](docs/MACOS.md) for the build and acceptance checklist.
 
 # Single Excel meeting-summary box — 2026-10-11

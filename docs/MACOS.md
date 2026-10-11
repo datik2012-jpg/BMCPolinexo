@@ -37,6 +37,8 @@ message over an anonymous pipe, never a port file. A per-login macOS Mach port
 activates the existing launcher on repeated starts. No customer content crosses
 that activation channel. The backend watches stdin: normal quit or unexpected
 launcher death closes the pipe and stops the backend, including during startup.
+Normal termination gives the child a bounded shutdown interval before forcing
+termination; it does not depend on a nested AppKit event loop to finish quitting.
 
 No uploaded workbook, customer data, application log, or coordination state is
 persisted. No database, browser storage or service worker is added. The installed

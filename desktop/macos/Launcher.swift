@@ -113,8 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         process.terminationHandler = { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
-                if self.quitting { NSApp.reply(toApplicationShouldTerminate: true) }
-                else { self.showFailure() }
+                if !self.quitting { self.showFailure() }
             }
         }
         child = process
@@ -188,7 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        if quitting { return .terminateLater }
+        if quitting { return .terminateCancel }
         quitting = true
         startupTimer?.invalidate()
         if let port = port { CFMessagePortInvalidate(port) }
@@ -196,14 +195,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         output?.fileHandleForReading.readabilityHandler = nil
         try? input?.fileHandleForWriting.close()
         guard let process = child, process.isRunning else { return .terminateNow }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
-            if process.isRunning { process.terminate() }
+        // Finish within the termination callback. NSTerminateLater can enter
+        // AppKit's termination run loop while the initiating main-queue block
+        // is still active, preventing a queued completion from being delivered.
+        // The child exits independently on EOF; this wait is short and bounded.
+        let gracefulDeadline = Date().addingTimeInterval(6)
+        while process.isRunning && Date() < gracefulDeadline {
+            Thread.sleep(forTimeInterval: 0.05)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) {
-            if process.isRunning { kill(process.processIdentifier, SIGKILL) }
-            NSApp.reply(toApplicationShouldTerminate: true)
+        if process.isRunning { process.terminate() }
+        let forcedDeadline = Date().addingTimeInterval(2)
+        while process.isRunning && Date() < forcedDeadline {
+            Thread.sleep(forTimeInterval: 0.05)
         }
-        return .terminateLater
+        if process.isRunning { kill(process.processIdentifier, SIGKILL) }
+        return .terminateNow
     }
 }
 
