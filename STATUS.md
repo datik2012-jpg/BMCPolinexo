@@ -1,3 +1,33 @@
+# Menora logo size in Excel — 2026-10-10
+
+- Replaced only the Excel Menora asset with the wide official wordmark (296×91), extracted unchanged from the SVG linked on Menora's website. This removes the square source image's excess white margins so the existing proportional fitting gives the mark comparable visual width to other insurer logos. Frontend assets and export logic are unchanged.
+- All 21 export tests passed. Rebuilt/recreated only API; localhost page and API returned HTTP 200. Official source and asset provenance recorded in `docs/INSURER_LOGOS.md`.
+
+# Restore previous cancellation wording — 2026-10-10
+
+- At the user's request, reverted the most recent coverage-specific Excel cancellation wording and its new regression cases. Restored **ביטול פוליסה** alongside the agent instructions. The reference-style layout and earlier changes remain intact.
+
+# Coverage-specific cancellation instructions — 2026-10-10
+
+- Corrected Excel cancellation wording from **ביטול פוליסה** to **ביטול כיסוי**, identifying the coverage name, owner and source sheet/row. A cancelled coverage never labels its entire policy cancelled; other coverage statuses, saved instructions and premiums remain unchanged.
+- Added regressions for cancelling one of three coverages in the same policy, including repeated coverage names, unchanged input data, exact totals and restoration. All 40 backend tests passed. Updated the browser export checks and durable export documentation.
+- Rebuilt/recreated only the local API service; web remains running. Source data and the workbook are still generated/handled in memory.
+
+# Reference-style Excel export — 2026-10-10
+
+- On `feature/fixed_excel`, redesigned the downloaded workbook around the approved reference: grouped agent header, proportional inset/centered logos, blue section headers, compact spacing and nine policy columns. Added customer age at last birthday, insurance start dates and plan classifications. Every distinct date/classification is displayed, with continuation rows for unusually long lists and full source periods retained in the audit.
+- Added a blank **סיכום פגישה והמלצות** area for the agent to edit in Excel only. No UI recommendation fields, API input, persistence, or copied reference data. Existing local cancellation changes are preserved, including **ביטול פוליסה** instructions and state-specific notes.
+- Kept owner/coverage dropdown behavior, separate family/selected totals, monthly/annual separation and source history. Empty insurance sections and zero annual total rows no longer add visible clutter; calculations remain intact.
+- Verified all 38 backend tests and real browser downloads against Docker, including cancellation/restoration and RTL. Native Excel verified six insured selections, eight coverage selections, stable totals, no formula errors, summary editing and save/reopen. Inspected native print previews with synthetic data, including multiple dates/classifications. Reference files and generated previews stay outside Git and container images.
+- Rebuilt/recreated only API; web was left running. Local page/API endpoints returned HTTP 200. Updated AGENTS.md, README, contract and export regression checks. Pre-existing unrelated changes and untracked build directories were preserved.
+
+# Proposed cancellation and Excel instructions — 2026-10-10
+
+- On `main`, replaced **החרגה** with **ביטול** in proposed coverages; **שחזור** restores the saved edits, instructions and premium. Status/filter/source labels now describe cancellation. Existing coverages remain intact.
+- Active cancellation adds **ביטול פוליסה** under the Excel **הוראות הסוכן** column alongside manual notes, including when notes are empty. Restoration removes the generated instruction from later exports. Source notes stay unchanged; monthly/annual amounts and customer ownership remain separate.
+- Verified 29 backend tests, 33 frontend tests and the Docker production build. Synthetic proposal and real browser-download checks passed for cancellation/restoration, retained edits, separate/shared views, state-specific instructions, totals, RTL and refresh clearing.
+- Rebuilt and recreated API/web; both are running, API is healthy, and localhost page/API checks returned HTTP 200. Updated AGENTS.md, README and API contract. Existing untracked build directories were left untouched.
+
 # Compact shared customer selector — 2026-10-05
 
 - Moved **הצגת לקוחות יחד** immediately below **+ הוסף לקוח נוסף**, keeping them adjacent when customer cards are reordered or removed.

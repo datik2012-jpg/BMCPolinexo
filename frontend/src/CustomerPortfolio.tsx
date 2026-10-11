@@ -243,8 +243,8 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                       : "הערות לייבוא"}
                   </summary>
                   <p>
-                    שורות חשודות אינן נמחקות אוטומטית. הפרמיות התקינות נכללות עד
-                    להחרגה.
+                    שורות חשודות אינן נמחקות אוטומטית. הפרמיות התקינות נכללות בחישוב;
+                    ניתן לסמן ביטול במצב החדש.
                   </p>
                   {report.warnings.map((w, i) => (
                     <p key={i}>{w}</p>
@@ -329,7 +329,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                   >
                     <option value="">כל הכיסויים</option>
                     <option value="review">דורשים בדיקה</option>
-                    <option value="excluded">הוחרגו מחישוב</option>
+                    <option value="excluded">סומנו לביטול</option>
                   </select>
                 </label>
                 {activeFilters && (
@@ -357,7 +357,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                     <button type="button" onClick={() => { setSource(false); setSourceFocus(null); }}>חזרה לפוליסות</button>
                     <p>
                       ערכי המקור אינם משתנים. כאן אפשר לבדוק כל שורה ואת ההשפעה
-                      המצטברת של התיקונים וההחרגות.
+                      המצטברת של התיקונים והביטולים.
                     </p>
                   </div>
                   {portfolioTotals(entries, "כל התיק · ערכי המקור", true)}
@@ -390,7 +390,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                         </span>
                         <span>
                           {e.excluded
-                            ? "הוחרגה"
+                            ? "סומן לביטול"
                             : isChanged(e)
                               ? "כוללת תיקונים"
                               : "לבדיקה מול המקור"}
@@ -536,7 +536,7 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                                     </details>}
                                     {e.excluded ? (
                                       <span className="badge">
-                                        הוחרג מהחישוב
+                                        סומן לביטול · לא נכלל בחישוב
                                       </span>
                                     ) : (
                                       issues(e, entries).map((i) => (
@@ -562,11 +562,15 @@ function PortfolioView({ customer, available, setReport, members, ownerOf, readO
                                       מקור
                                     </button>
                                     <button
+                                      disabled={!available}
+                                      title={e.excluded
+                                        ? "שחזור הכיסוי למצב שלפני הביטול, כולל העריכות והוראות הסוכן."
+                                        : "סימון הכיסוי לביטול במצב החדש והוצאתו מהחישוב. ניתן לשחזר."}
                                       onClick={() =>
                                         update({ ...e, excluded: !e.excluded })
                                       }
                                     >
-                                      {e.excluded ? "שחזור" : "החרגה"}
+                                      {e.excluded ? "שחזור" : "ביטול"}
                                     </button>
                                     <button disabled={!available} onClick={() => onRemove?.(e.id)}
                                       title="הסרת העותק והשינויים מהמצב החדש. הכיסוי המקורי נשאר במצב הקיים וניתן להעתיק אותו שוב.">

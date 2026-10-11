@@ -1,5 +1,7 @@
 """Compact RTL presentation with native Excel selectors and auditable inputs."""
 from collections import Counter
+from datetime import date, datetime
+from itertools import zip_longest
 from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
@@ -13,6 +15,9 @@ from xml.etree import ElementTree as ET
 
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.xdr import XDRPositiveSize2D
+from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.page import PageMargins
@@ -22,13 +27,51 @@ from openpyxl.utils import get_column_letter
 
 from .parser import FIELDS, HEADERS, normalize
 
-NAVY, TEAL, PALE, BLUE, LINE = '073453', '0099B5', 'EAF4FA', '65BCE3', 'C6DDEB'
+NAVY, TEAL, PALE, BLUE, LINE = '003366', '0066CC', 'EAF4FA', '65BCE3', 'C6DDEB'
 MONEY = '#,##0.00 "₪"'
 FAMILY = 'כל המשפחה'
-# Eleven physical columns retain the reference customer table. Merged cells
-# provide exactly seven logical columns in each insurance table.
-SPANS = [(1, 1), (2, 2), (3, 3), (4, 5), (6, 7), (8, 8), (9, 11)]
-TITLES = ['לוגו חברת ביטוח', 'שם חברת ביטוח', 'מספר פוליסה', 'כיסויים', 'מבוטחים', 'פרמיה חודשית', 'הערות סוכן']
+# Shared physical columns align customer and policy tables with the reference.
+WIDTHS = [14, 20, 16, 17, 12, 15, 14, 10, 16, 18, 11, 13, 20]
+SPANS = [(1, 1), (2, 2), (3, 3), (4, 5), (6, 6), (7, 8), (9, 9), (10, 10), (11, 13)]
+TITLES = ['', 'שם חברת ביטוח', 'מספר פוליסה', 'כיסויים', 'תאריך תחילת ביטוח', 'מבוטחים', 'פרמיה חודשית', 'סיווג תכנית', 'הוראות הסוכן']
+
+
+def parsed_date(value):
+    for pattern in ('%Y-%m-%d', '%d/%m/%Y', '%d.%m.%Y'):
+        try:
+            return datetime.strptime(value.strip(), pattern).date()
+        except ValueError:
+            pass
+    return None
+
+
+def insurance_age(birth_date, on_date):
+    born = parsed_date(birth_date)
+    if not born or born > on_date:
+        return None
+    return on_date.year - born.year - ((on_date.month, on_date.day) < (born.month, born.day))
+
+
+def start_date(period):
+    # Recognize a complete leading date; never infer one from a year or label.
+    match = re.match(r'^\s*(\d{4}-\d{2}-\d{2}|\d{1,2}[/\.]\d{1,2}[/\.]\d{4})(?=\s|$|[-–—])', period)
+    return parsed_date(match[1]) if match else None
+
+
+def add_fitted_logo(sheet, path, row, height_points, max_height=None):
+    """Inset a proportional image inside column A, including in RTL Excel."""
+    logo = Image(path)
+    width = int(WIDTHS[0] * 7 + 5)
+    height = height_points * 4 / 3
+    ratio = min((width - 12) / logo.width, min(height - 8, max_height or height) / logo.height)
+    logo.width, logo.height = logo.width * ratio, logo.height * ratio
+    logo.anchor = OneCellAnchor(
+        _from=AnchorMarker(col=0, row=row - 1,
+                           colOff=pixels_to_EMU((width - logo.width) / 2),
+                           rowOff=pixels_to_EMU((height - logo.height) / 2)),
+        ext=XDRPositiveSize2D(pixels_to_EMU(logo.width), pixels_to_EMU(logo.height)),
+    )
+    sheet.add_image(logo)
 
 
 def put(sheet, row, col, value):
@@ -57,7 +100,6 @@ def insurer_logo(name):
 
 
 def create_export(request):
-    from .exporter import DETAILS
     book = Workbook()
     sheet = book.active
     sheet.title = 'תיק ביטוח'
@@ -69,10 +111,10 @@ def create_export(request):
     for tab in book:
         tab.sheet_view.rightToLeft = True
         tab.sheet_view.showGridLines = False
-    for col in range(1, 12):
-        sheet.column_dimensions[get_column_letter(col)].width = [13, 16, 16, 17, 12, 14, 10, 14, 11, 13, 20][col - 1]
+    for col, width in enumerate(WIDTHS, 1):
+        sheet.column_dimensions[get_column_letter(col)].width = width
 
-    def style(row, start=1, end=11, fill=None, bold=False):
+    def style(row, start=1, end=13, fill=None, bold=False):
         for col in range(start, end + 1):
             cell = sheet.cell(row, col)
             cell.font = Font(name='Arial', size=10, color='FFFFFF' if fill in (NAVY, TEAL) else NAVY, bold=bold)
@@ -82,10 +124,14 @@ def create_export(request):
 
     def band(text, fill=NAVY):
         row = sheet.max_row + 2
-        sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=11)
+        sheet.row_dimensions[row - 1].height = 7
+        sheet.merge_cells(start_row=row, start_column=1, end_row=row, end_column=13)
         put(sheet, row, 1, text)
         style(row, fill=fill, bold=True)
-        sheet.row_dimensions[row].height = 23
+        sheet.row_dimensions[row].height = 28 if fill == NAVY else 23
+        sheet.cell(row, 1).font = Font(name='Arial', size=14 if fill == NAVY else 12, color='FFFFFF' if fill in (NAVY, TEAL) else NAVY, bold=True)
+        if text in ('מצב קיים', 'מצב חדש'):
+            sheet.cell(row, 1).alignment = Alignment(horizontal='center', vertical='center', readingOrder=2)
         return row
 
     def logical(row, values, fill=None, bold=False):
@@ -94,33 +140,51 @@ def create_export(request):
                 sheet.merge_cells(start_row=row, start_column=left, end_row=row, end_column=right)
             put(sheet, row, left, value)
         style(row, fill=fill, bold=bold)
+        for col in (2, 3, 6, 7, 9, 10):
+            sheet.cell(row, col).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True, readingOrder=2)
 
-    for col, value in enumerate(['', 'שם פרטי של הסוכן', 'שם משפחה של הסוכן', 'תאריך'], 1):
-        put(sheet, 1, col, value)
-    for col, value in enumerate(['', request.agent.firstName, request.agent.lastName, request.agent.date], 1):
-        put(sheet, 2, col, value)
-    style(1, end=4, fill=NAVY, bold=True)
-    style(2, end=4)
-    sheet.row_dimensions[1].height = 29
-    sheet.row_dimensions[2].height = 29
-    logo = Image(Path(__file__).parent / 'assets' / 'bmc-select.jpg')
-    ratio = min(110 / logo.width, 74 / logo.height)
-    logo.width, logo.height = logo.width * ratio, logo.height * ratio
-    sheet.add_image(logo, 'A1')
+    # Brand occupies its own white block; agent identity and date have room to fit.
+    sheet.merge_cells('A1:A2')
+    for area in ('B1:C1', 'B2:C2', 'D1:E1', 'D2:E2'):
+        sheet.merge_cells(area)
+    put(sheet, 1, 2, 'פרטי סוכן')
+    put(sheet, 2, 2, ' '.join(filter(None, [request.agent.firstName, request.agent.lastName])))
+    put(sheet, 1, 4, 'תאריך')
+    put(sheet, 2, 4, parsed_date(request.agent.date) or request.agent.date)
+    sheet['D2'].number_format = 'dd/mm/yyyy'
+    style(1, start=2, end=5, fill=NAVY, bold=True)
+    style(2, start=2, end=5)
+    sheet['D2'].number_format = 'dd/mm/yyyy'
+    sheet.row_dimensions[1].height = sheet.row_dimensions[2].height = 29
+    add_fitted_logo(sheet, Path(__file__).parent / 'assets' / 'bmc-select.jpg', 1, 58)
     band('לקוחות')
     row = sheet.max_row + 1
-    for col, value in enumerate(['מספר לקוח בייצוא', *DETAILS.values(), 'תאריך הדוח', 'הערות ייבוא'], 1):
+    customer_headers = ['מספר לקוח בייצוא', 'שם פרטי', 'שם משפחה', 'תעודת זהות', 'קרבה משפחתית',
+                        'גיל ביטוחי', 'תאריך לידה', 'מין', 'מצב משפחתי', '', 'עישון', 'תאריך הדוח', 'הערות ייבוא']
+    for col, value in enumerate(customer_headers, 1):
         put(sheet, row, col, value)
+    sheet.merge_cells(start_row=row, start_column=9, end_row=row, end_column=10)
     style(row, fill=TEAL, bold=True)
-    sheet.row_dimensions[row].height = 30
+    sheet.row_dimensions[row].height = 34
+    for col in range(1, 14):
+        sheet.cell(row, col).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True, readingOrder=2)
+    age_date = parsed_date(request.agent.date) or date.today()
     for number, customer in enumerate(request.customers, 1):
         row += 1
-        values = [number, *(customer.details[key] for key in DETAILS),
-                  customer.report.report_date or '' if customer.report else '',
+        details = customer.details
+        values = [number, details['firstName'], details['lastName'], details['identity'], details['relationship'],
+                  insurance_age(details['birthDate'], age_date), parsed_date(details['birthDate']) or details['birthDate'],
+                  details['gender'], details['maritalStatus'], '', details['smoking'],
+                  (parsed_date(customer.report.report_date or '') or customer.report.report_date or '') if customer.report else '',
                   '\n'.join(customer.report.warnings) if customer.report else '']
         for col, value in enumerate(values, 1):
             put(sheet, row, col, value)
+        sheet.merge_cells(start_row=row, start_column=9, end_row=row, end_column=10)
         style(row, fill=PALE if number % 2 else None)
+        for col in range(1, 13):
+            sheet.cell(row, col).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True, readingOrder=2)
+        for col in (7, 12):
+            sheet.cell(row, col).number_format = 'dd/mm/yyyy'
         sheet.row_dimensions[row].height = min(409, max(28, max(ceil(len(str(v)) / 17) for v in values) * 14))
 
     calc.append(['קבוצה', 'מבוטחים', 'חודשי', 'שנתי', 'חישוב חלקי', 'מצב', 'חודשי לפי הבחירה'])
@@ -162,7 +226,7 @@ def create_export(request):
         band(state)
         if state == 'מצב חדש':
             r = sheet.max_row + 1
-            sheet.merge_cells(start_row=r, start_column=1, end_row=r, end_column=11)
+            sheet.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
             put(sheet, r, 1, 'הצעה בלבד. נכללים רק כיסויים שהועתקו; כיסוי שלא הועתק אינו נחשב כמבוטל.')
             style(r)
             sheet.row_dimensions[r].height = 24
@@ -192,12 +256,14 @@ def create_export(request):
         family_rows, selection_rows, annual_rows = [], [], []
         state_partial = False
         for section in ['ביטוחי פרט', 'ביטוח אלמנטרי']:
+            matches = [(key, rows) for key, rows in grouped.items() if key[0] == section]
+            if not matches and (grouped or section == 'ביטוח אלמנטרי'):
+                continue
             band(section, TEAL)
             logical(sheet.max_row + 1, TITLES, fill=NAVY, bold=True)
             sheet.row_dimensions[sheet.max_row].height = 30
-            matches = [(key, rows) for key, rows in grouped.items() if key[0] == section]
             if not matches:
-                logical(sheet.max_row + 1, ['', '', '', 'אין כיסויים', '', '', ''])
+                logical(sheet.max_row + 1, ['', '', '', 'אין כיסויים', '', '', '', '', ''])
             for key, entries in matches:
                 group_number += 1
                 people = {}
@@ -215,15 +281,18 @@ def create_export(request):
                     # categories and duplicate source rows remain in the audit sheet.
                     label = (values['product_type'].strip() or values['subcategory'].strip()
                              or values['category'].strip() or 'כיסוי ללא תיאור')
+                    cancelled = state == 'מצב חדש' and excluded
                     if excluded:
-                        label += ' (מוחרג)'
+                        label += ' (מבוטל)' if cancelled else ' (מוחרג)'
                     coverage_options.append(label)
+                    if cancelled:
+                        note_lines.append(f'{names[customer.id]}: ביטול פוליסה')
                     if values['additional_details']:
                         note_lines.append(f'{names[customer.id]}: {values["additional_details"]}')
                     if not valid or freq not in ('monthly', 'annual'):
                         note_lines.append(f'{names[customer.id]}: פרמיה או תדירות לא תקינה — {values["premium"]} / {values["frequency"]}')
                     if valid and freq == 'annual':
-                        note_lines.append(f'{names[customer.id]}: פרמיה שנתית {normalized["premium"]} ₪' + (' (מוחרגת)' if excluded else ''))
+                        note_lines.append(f'{names[customer.id]}: פרמיה שנתית {normalized["premium"]} ₪' + (' (מבוטלת)' if cancelled else ' (מוחרגת)' if excluded else ''))
                 for cid, amounts in people.items():
                     owner_totals = customer_totals.setdefault((state, cid), [Decimal(0), Decimal(0), False])
                     owner_totals[0] += amounts[0]
@@ -268,19 +337,26 @@ def create_export(request):
                 coverage_validation.prompt = 'הרשימה מציגה את הכיסויים בפוליסה. בחירת כיסוי אינה משנה את הפרמיה או את הסכומים.'
                 sheet.add_data_validation(coverage_validation)
                 coverage_validation.add(sheet.cell(r, 4))
-                note_chunks = chunks('\n'.join(note_lines), 38, 14)
-                logical(r, ['', key[1], key[2], coverage_title, choice, None, note_chunks[0]], fill=PALE if group_number % 2 else None)
+                periods = list(dict.fromkeys(v['period'].strip() for _, _, v, _, _, _ in entries))
+                starts = list(dict.fromkeys(start_date(p).strftime('%d/%m/%Y') if start_date(p) else p or 'לא צוין' for p in periods))
+                classifications = list(dict.fromkeys(v['classification'].strip() or 'לא צוין' for _, _, v, _, _, _ in entries))
+                detail_chunks = list(zip_longest(chunks('\n'.join(starts), 16, 14),
+                                                chunks('\n'.join(classifications), 18, 14),
+                                                chunks('\n'.join(note_lines), 38, 14), fillvalue=''))
+                dates_text, classification_text, notes_text = detail_chunks[0]
+                logical(r, ['', key[1], key[2], coverage_title, dates_text, choice, None, classification_text, notes_text], fill=PALE if group_number % 2 else None)
                 sheet.cell(r, 4).alignment = Alignment(horizontal='right', vertical='center', wrap_text=False, readingOrder=2)
-                def content_height(notes):
-                    lines = sum(max(1, ceil(len(line) / 38)) for line in notes.split('\n'))
+                if len(starts) == 1 and parsed_date(starts[0]):
+                    sheet.cell(r, 6).value = parsed_date(starts[0])
+                    sheet.cell(r, 6).number_format = 'dd/mm/yyyy'
+                def content_height(dates, classifications, notes, insurer=''):
+                    lines = max(sum(max(1, ceil(len(line) / width)) for line in text.split('\n'))
+                                for text, width in [(dates, 16), (classifications, 18), (notes, 38), (insurer, 20)])
                     return max(32, min(350, lines * 16 + 12))
-                sheet.row_dimensions[r].height = content_height(note_chunks[0])
+                sheet.row_dimensions[r].height = content_height(dates_text, classification_text, notes_text, key[1])
                 logo_path = insurer_logo(key[1])
                 if logo_path:
-                    policy_logo = Image(logo_path)
-                    scale = min(95 / policy_logo.width, 38 / policy_logo.height)
-                    policy_logo.width, policy_logo.height = policy_logo.width * scale, policy_logo.height * scale
-                    sheet.add_image(policy_logo, f'A{r}')
+                    add_fitted_logo(sheet, logo_path, r, sheet.row_dimensions[r].height, max_height=38)
                 validation = DataValidation(type='list', formula1=f'={name}', allow_blank=False)
                 validation.showErrorMessage = True
                 validation.errorStyle = 'stop'
@@ -290,27 +366,33 @@ def create_export(request):
                 validation.promptTitle = 'פרמיה לפי מבוטחים'
                 validation.prompt = 'הבחירה משנה את הפרמיה בשורה. סך המשפחה נשאר ללא שינוי.'
                 sheet.add_data_validation(validation)
-                validation.add(sheet.cell(r, 6))
-                formula(sheet.cell(r, 8), f'=INDEX(\'נתוני חישוב\'!$C${start}:$C${end},MATCH(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(F{r},"~","~~"),"*","~*"),"?","~?"),\'נתוני חישוב\'!$B${start}:$B${end},0))', people[choice_id][0] if choice_id else family[0])
+                validation.add(sheet.cell(r, 7))
+                formula(sheet.cell(r, 9), f'=INDEX(\'נתוני חישוב\'!$C${start}:$C${end},MATCH(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(G{r},"~","~~"),"*","~*"),"?","~?"),\'נתוני חישוב\'!$B${start}:$B${end},0))', people[choice_id][0] if choice_id else family[0])
                 selection_rows.append(r)
-                calc.cell(start, 7, f"='תיק ביטוח'!H{r}")
-                for note_chunk in note_chunks[1:]:
+                calc.cell(start, 7, f"='תיק ביטוח'!I{r}")
+                for dates_text, classification_text, notes_text in detail_chunks[1:]:
                     rr = sheet.max_row + 1
-                    logical(rr, ['', key[1], key[2], '', 'המשך הערות', '', note_chunk], fill=PALE if group_number % 2 else None)
-                    sheet.row_dimensions[rr].height = content_height(note_chunk)
+                    logical(rr, ['', key[1], key[2], '', dates_text, 'המשך פירוט', '', classification_text, notes_text], fill=PALE if group_number % 2 else None)
+                    sheet.row_dimensions[rr].height = content_height(dates_text, classification_text, notes_text, key[1])
         for title, rows, column, selected_total in [
             ('סה"כ בחודש למשפחה', family_rows, 'C', False),
-            ('סה"כ חודשי לפי הבחירה', selection_rows, 'H', True),
+            ('סה"כ חודשי לפי הבחירה', selection_rows, 'I', True),
             ('סה"כ פרמיות שנתיות למשפחה (לא תשלום חודשי)', annual_rows, 'D', False),
         ]:
             r = sheet.max_row + 1
-            logical(r, ['', '', '', title, '', None, 'סכום חלקי — נדרש בירור' if state_partial else ''], fill=BLUE, bold=True)
-            sheet.row_dimensions[r].height = 32
-            value = sum((cached[f'H{n}'] if selected_total else calc[f'{column}{n}'].value for n in rows), Decimal(0))
+            sheet.merge_cells(start_row=r, start_column=1, end_row=r, end_column=8)
+            sheet.merge_cells(start_row=r, start_column=11, end_row=r, end_column=13)
+            put(sheet, r, 1, title)
+            put(sheet, r, 11, 'סכום חלקי — נדרש בירור' if state_partial else '')
+            style(r, fill=BLUE, bold=True)
+            sheet.row_dimensions[r].height = 25
+            value = sum((cached[f'I{n}'] if selected_total else calc[f'{column}{n}'].value for n in rows), Decimal(0))
             source_column = 'G' if selected_total else column
             end = calc.max_row
             expression = f"=SUMIFS('נתוני חישוב'!{source_column}$2:{source_column}${end},'נתוני חישוב'!B$2:B${end},\"{FAMILY}\",'נתוני חישוב'!F$2:F${end},\"{state}\")"
-            formula(sheet.cell(r, 8), expression, value)
+            formula(sheet.cell(r, 9), expression, value)
+            if column == 'D' and value == 0:
+                sheet.row_dimensions[r].hidden = True
 
     for col, label in enumerate(['מצב', 'לקוח', 'תעודת זהות', 'סה״כ חודשי', 'סה״כ שנתי', 'שלמות הסכומים'], 9):
         put(calc, 1, col, label)
@@ -324,8 +406,14 @@ def create_export(request):
             calc.cell(summary_row, 13).number_format = MONEY
             summary_row += 1
 
-    band('הסכומים השנתיים נשמרים בנפרד. פירוט המקור והשינויים נמצא בגיליון המוסתר ״מקור ושינויים״.', TEAL)
-    sheet.row_dimensions[sheet.max_row].height = 30
+    band('סיכום פגישה והמלצות', PALE)
+    for _ in range(3):
+        r = sheet.max_row + 1
+        sheet.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
+        style(r, fill='DCEEF3')
+        sheet.row_dimensions[r].height = 18
+    sheet.sheet_properties.tabColor = NAVY
+    sheet.sheet_view.zoomScale = 85
     sheet.freeze_panes = 'D6'
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
     sheet.page_setup.orientation = 'landscape'
@@ -333,7 +421,7 @@ def create_export(request):
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
     sheet.page_margins = PageMargins(left=.2, right=.2, top=.25, bottom=.25, header=0, footer=0)
-    sheet.print_area = f'A1:K{sheet.max_row}'
+    sheet.print_area = f'A1:M{sheet.max_row}'
     output = BytesIO()
     book.save(output)
     ns = {'s': 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'}
