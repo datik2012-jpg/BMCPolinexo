@@ -20,6 +20,20 @@ The header places the BMSelect logo in the top-right corner with an 8px inset at
 
 To display additional coverage details, choose **עריכה**, enter text in **הוראות הסוכן**, then choose **שמירת תיקונים**. The saved text appears below the source row/sheet under **בדיקה ומקור**, with a bold **הוראות הסוכן** heading. This section is open by default and can be collapsed. Numeric Excel identifiers no longer produce a leading-zero warning; explicit zero-padding formats are still preserved. Empty details are hidden. These corrections stay in memory; they do not modify the original Excel file and are cleared on refresh or server restart.
 
+## Mac installer (Apple silicon)
+
+The `feature/mac-installer` branch builds BMCPolinexo 1.2.2 for Apple-silicon Macs,
+including MacBook Pro M4 with 16 GB RAM, running macOS 15 or newer. The DMG contains
+Python, the API and the built UI; employees do not need Docker or development tools.
+Open the DMG, drag **BMCPolinexo** to **Applications**, eject the disk, then launch
+it from Applications. Keep the small Hebrew launcher window open while working.
+Quit the launcher to stop the local server and clear open browser portfolios.
+
+The pilot is ad-hoc signed and is not Apple-notarized. macOS may require
+**System Settings → Privacy & Security → Open Anyway** after the first launch
+attempt. See [Mac installation, build and verification](docs/MACOS.md), including
+how to send the DMG as a WhatsApp document and which acceptance checks remain.
+
 ## Docker Desktop
 
 Install Docker Desktop with Linux containers, then run from the repository root:

@@ -1,4 +1,5 @@
 """Browser-to-XLSX regression with synthetic data only."""
+import os
 from io import BytesIO
 from pathlib import Path
 from openpyxl import load_workbook
@@ -16,7 +17,7 @@ with sync_playwright() as p:
     page = browser.new_page(viewport={'width': 1440, 'height': 1000}, accept_downloads=True)
     errors = []
     page.on('pageerror', lambda error: errors.append(str(error)))
-    page.goto('http://127.0.0.1:8080')
+    page.goto(os.environ.get('BMC_URL', 'http://127.0.0.1:8080'))
     expect(page.get_by_label('שם פרטי', exact=True)).to_be_enabled(timeout=15000)
     for index, identity in enumerate(['999999999', '888888888', '777777777']):
         if index:
@@ -56,6 +57,14 @@ with sync_playwright() as p:
         item.delete()
         book = load_workbook(BytesIO(data), data_only=True)
         assert book.sheetnames == ['תיק ביטוח', 'נתוני חישוב', 'מקור ושינויים']
+        sheet = book.active
+        summary = next(c.row for row in sheet for c in row if c.value == 'סיכום פגישה והמלצות')
+        assert sheet.max_row == summary + 1
+        assert f'A{summary + 1}:M{summary + 1}' in sheet.merged_cells
+        assert sheet.cell(summary + 1, 1).value is None
+        assert sheet.row_dimensions[summary + 1].height == 120
+        assert sheet.cell(summary + 1, 1).alignment.wrap_text
+        assert sheet.freeze_panes == 'A6'
         assert [book.active.cell(r, 2).value for r in (6, 7, 8)] == ['בדיקה0', 'בדיקה1', 'בדיקה2']
         coverage_lists = [v for v in book.active.data_validations.dataValidation if v.formula1.startswith('=Coverages_')]
         assert len(coverage_lists) == 3

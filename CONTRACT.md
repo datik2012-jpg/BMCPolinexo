@@ -1,6 +1,12 @@
 # API contract
 
 GET `/api/instance` returns `{ "instance_id": "process-random-uuid" }`.
+The packaged desktop runtime adds `"desktop_mode": true`. In that mode the browser
+also clears customer details, imports and edits when the launcher connection is
+lost, because restarting the app selects a fresh localhost port. Docker mode
+retains its existing offline-lock/restart detection behavior. Desktop serves the
+built UI from the same localhost origin; unknown `/api/*` requests remain 404.
+Responses include no-store, nosniff, no-referrer and DENY frame headers.
 POST `/api/import` takes multipart field `file` (one .xlsx). Responses have Cache-Control: no-store. Errors return `{ "detail": "Hebrew user-safe message" }`.
 
 Success: `{instance_id: string, report_date: string | null, entries: Entry[], warnings: string[]}`.

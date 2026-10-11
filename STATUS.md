@@ -1,3 +1,14 @@
+## macOS installer work — 2026-10-11
+
+On `feature/mac-installer`, based on the approved `main` application at `98deb4e`.
+Added a Swift/AppKit launcher, a bundled Python server, Apple-silicon DMG packaging,
+ad-hoc signing, allowlisted asset audits, and an ARM macOS GitHub Actions build.
+Shared desktop serving, browser disconnect clearing and browser checks are taken
+from the reviewed Windows branch. No Windows-only runtime is included.
+
+Validation is in progress; an actual Mac build is required before delivery.
+See [MACOS.md](docs/MACOS.md) for the build and acceptance checklist.
+
 # Single Excel meeting-summary box — 2026-10-11
 
 - Replaced the three individual summary lines with one full-width, 120-point merged writing cell. The heading and input share a pale-blue background and outer border, with no internal lines. Hebrew text wraps from the top right; Alt+Enter adds a line inside the box. The input remains blank until the agent edits the downloaded workbook.
