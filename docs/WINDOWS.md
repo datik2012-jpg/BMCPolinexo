@@ -153,6 +153,42 @@ with a standard user and no development tools:
 Record OS build, user privilege, installer hash and pass/fail results. A build
 on a development machine alone does not satisfy this clean-machine gate.
 
+## Verification recorded on 2026-10-11
+
+Installer: **1.2.2**, 19,311,115 bytes, Windows 10/11 x64 target. SHA-256:
+`4261e74a3ebe922643b2e7e1c59b628a8b171866a00c4252d00f9363c613c1ae`.
+
+Passed today on Windows 10 build 19045 under a non-elevated user:
+
+- All 54 backend/Windows runtime tests and all 33 frontend tests.
+- Node.js 22.23.3 production build, Python 3.12.10/PyInstaller 6.22.0 bundle
+  and Inno Setup 6.5.4 installer. Audited all 1,066 bundled files, including
+  all 30 web files and 28 explicit Excel export assets.
+- In-place upgrade of the existing installation from 1.2.1 to 1.2.2.
+  All installed payload hashes match the audited bundle; both desktop and
+  Start Menu shortcuts target the upgraded executable.
+- All seven browser suites against the installed executable: import/grouping,
+  customer and shared workflows, real Excel downloads, proposed coverage
+  cancellation/restoration, category filters, and 26 insurer logos.
+  Download checks include the single blank, wrapped meeting-summary box,
+  its height/merge, removal of the frozen-column divider, zero-annual-note
+  display and preserved separate family/person and monthly/annual totals.
+- Repeated launch reuses the instance; updating while the app runs is refused.
+  Closing, restarting and crashing the launcher clear the browser data.
+  The localhost port closes, runtime files remain unchanged, no external app
+  requests occur, and the child process runs without development tools on PATH.
+- Local and current remote Git histories contain no Excel paths. Docker API/web
+  were rebuilt and are healthy; localhost page/API returned HTTP 200.
+
+The existing installation was left upgraded to 1.2.2. Uninstall, fresh install,
+and a Hebrew installation path were not retested in this release, to preserve
+the user's existing installation; the historical 1.2.1 results remain below.
+This is a Windows 10 development-PC check, not execution on clean Windows 10/11
+machines. Windows 11, high-DPI launcher appearance and multiple Windows users
+still need [separate-PC acceptance](WINDOWS-PC-CHECKLIST.md). The build remains
+unsigned. Detailed output is ignored at
+`test-results/windows-installer-1.2.2-validation.log`.
+
 ## Verification recorded on 2026-10-05
 
 Installer: **1.2.1**, 19,303,902 bytes, Windows 10/11 x64. SHA-256:

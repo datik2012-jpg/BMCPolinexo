@@ -1,3 +1,12 @@
+# Windows installer 1.2.2 and approved Excel merge — 2026-10-11
+
+- Pushed the approved `feature/fixed_excel` work to `main` and `feature/fixed_excel` at `98deb4e`. Merged main into `feature/windows-installer`, preserving the Windows launcher and connection-loss clearing. Installer application/build source: `71b8ec0`; release tag: `v1.2.2-windows`.
+- Built installer **1.2.2** with all approved Excel changes, including the single meeting-summary writing box, age/start dates/classifications, insurer logos, cancellation instructions, zero-annual-note display and no vertical frozen-column divider. Updated release defaults, documentation, separate-PC checklist and the actual download checks.
+- All 54 backend/runtime tests, 33 frontend tests and seven installed-app browser suites passed. Audited 1,066 bundled files, 30 web files and 28 Excel export assets; local/current remote Git histories contain no Excel paths.
+- On Windows 10 build 19045 as a non-admin user, upgraded the existing 1.2.1 installation to 1.2.2 and verified both shortcuts, every installed payload hash, repeated launch, running-app update refusal, real exports and close/restart/crash clearing. **Left 1.2.2 installed.** No uninstall/fresh-install test was run against the user's existing installation. Clean Windows 11 and separate-PC checks remain pending.
+- Installer: `dist/releases/1.2.2/BMCPolinexo-Setup.exe` (19,311,115 bytes). SHA-256: `4261e74a3ebe922643b2e7e1c59b628a8b171866a00c4252d00f9363c613c1ae`. Installation notes, checksum and a distribution ZIP are generated locally and ignored by Git. The installer remains unsigned.
+- Rebuilt/recreated Docker API/web for the merged desktop-support sources and verified localhost page/API HTTP 200. See [Windows verification](docs/WINDOWS.md) for the precise test scope.
+
 # Single Excel meeting-summary box — 2026-10-11
 
 - Replaced the three individual summary lines with one full-width, 120-point merged writing cell. The heading and input share a pale-blue background and outer border, with no internal lines. Hebrew text wraps from the top right; Alt+Enter adds a line inside the box. The input remains blank until the agent edits the downloaded workbook.
