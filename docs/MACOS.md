@@ -1,5 +1,11 @@
 # macOS installer
 
+Verified build: [download the installer ZIP](https://github.com/datik2012-jpg/BMCPolinexo/actions/runs/38155400652/artifacts/11708487085)
+(GitHub sign-in may be required; available through 2026-11-10). Extract the ZIP to
+get the DMG. A permanent local copy is in `dist/releases/1.2.2-macos-arm64/`.
+The build passed on macOS 15.7.9 arm64; checksums and details are in
+[STATUS.md](../STATUS.md).
+
 ## Target and installation
 
 BMCPolinexo 1.2.2 targets **Apple silicon (arm64), macOS 15 or newer**. This includes

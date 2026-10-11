@@ -1,16 +1,43 @@
-## macOS installer work — 2026-10-11
+## macOS installer 1.2.2 — verified 2026-10-11
 
-On `feature/mac-installer`, based on the approved `main` application at `98deb4e`.
-Added a Swift/AppKit launcher, a bundled Python server, Apple-silicon DMG packaging,
-ad-hoc signing, allowlisted asset audits, and an ARM macOS GitHub Actions build.
-Shared desktop serving, browser disconnect clearing and browser checks are taken
-from the reviewed Windows branch. No Windows-only runtime is included.
+Created on `feature/mac-installer` from approved main `98deb4e`. Installer source
+commit: `d2fec97aa13aa1b81c6be1cf219b45f2360fb32a`. Main and the Windows branch
+were not changed. Documentation-only commits after the build do not change its payload.
 
-The first macOS 15.7.9 arm64 build passed signatures, DMG installation, 52 backend
-and 33 frontend tests, and all seven packaged browser suites. Its shutdown check
-found an AppKit asynchronous termination wait; the launcher now uses a bounded
-synchronous shutdown. Full package revalidation is in progress.
-See [MACOS.md](docs/MACOS.md) for the build and acceptance checklist.
+- [Successful Apple-silicon workflow](https://github.com/datik2012-jpg/BMCPolinexo/actions/runs/38155400652).
+- [Download artifact ZIP](https://github.com/datik2012-jpg/BMCPolinexo/actions/runs/38155400652/artifacts/11708487085)
+  (GitHub sign-in may be required; expires 2026-11-10).
+- Local DMG: `dist/releases/1.2.2-macos-arm64/BMCPolinexo-1.2.2-macos-arm64.dmg`.
+- DMG size: 21,752,840 bytes. SHA-256:
+  `a82c9b2514c07c984b6da651432ed5872919c6d0e1f0b01f3e8bec6d81c7507d`.
+- Local artifact ZIP: `dist/releases/BMCPolinexo-1.2.2-macos-arm64.zip`.
+  SHA-256: `cdbdd12496bd661f7f45784b8bb47155019edaaf922b4f2514ad4c05ea967025`.
+  Both downloaded checksums match GitHub/build evidence.
+- Target: native arm64, macOS 15+, including MacBook Pro M4 / 16 GB. Ad-hoc signed;
+  no Developer ID or Apple notarization. No Docker/Python/Node installation needed.
+
+Verified on macOS 15.7.9 arm64: 52 backend/runtime and 33 frontend tests; 194 bundled
+files audited, including 30 approved web files and 28 Excel export assets; native
+executable architectures and deep code signatures; DMG mount/copy/eject and launch
+from a Hebrew/space path with no developer PATH and invalid inherited Python settings.
+All seven packaged browser suites passed, including import, family/shared views,
+proposals, categories, logos, and Excel export with the merged meeting-summary box.
+
+Single-instance activation, normal exit, fresh restart, forced launcher death,
+backend termination, browser clearing, unchanged app files, and replacement/removal
+preserving unrelated files all passed. Normal shutdown uses a bounded wait so it
+does not depend on AppKit's nested termination loop. Build metadata, installation
+notes, checksums and `TEST-RESULTS.txt` are beside the local DMG.
+
+Local Windows verification also passed 52 backend/runtime and 33 frontend tests,
+the frontend build and asset audit, and Docker browser/import/export checks. API
+and web images were rebuilt; the healthy localhost app serves the expected frontend
+bundle and returns HTTP 200. No client workbook was used or packaged.
+
+Physical M4, Safari/default-browser opening, Finder drag-and-drop interaction and
+first-launch Gatekeeper approval remain employee acceptance checks. See
+[MACOS.md](docs/MACOS.md) for installation and build instructions.
+
 
 # Single Excel meeting-summary box — 2026-10-11
 
