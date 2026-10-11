@@ -29,7 +29,10 @@ with sync_playwright() as p:
                 'name': 'synthetic.xlsx', 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'buffer': fixture_module.fixture([
                     fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000123', premium=10 + index, category='ביטוח בריאות'),
-                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=120, frequency='שנתית', category='ביטוח רכב'),
+                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=120, frequency='שנתית', category='ביטוח רכב',
+                                       additional_details='*פוליסת נהג נקוב'),
+                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=0,
+                                       frequency='שנתית', category='ביטוח רכב', additional_details='*פוליסת נהג נקוב'),
                 ])})
             expect(card.locator('.upload-success')).to_be_visible()
     section = page.get_by_role('region', name='תיק לקוח בדיקה0 סינתטי', exact=True)
@@ -63,6 +66,11 @@ with sync_playwright() as p:
         assert any('הערה סינתטית' in str(c.value) for row in book.active for c in row)
         policy_rows = [book.active[str(v.sqref)].row for v in book.active.data_validations.dataValidation if v.formula1.startswith('=Insured_')]
         assert all('ביטול פוליסה' not in str(book.active.cell(r, 11).value) for r in policy_rows[:-1])
+        general_row = next(r for r in policy_rows if book.active.cell(r, 3).value == '000456')
+        general_notes = book.active.cell(general_row, 11).value
+        assert 'פרמיה שנתית 0' not in general_notes
+        assert general_notes.count('*פוליסת נהג נקוב') == 2  # Nonzero entries only, one per owner.
+        assert general_notes.count('פרמיה שנתית 120') == 2
         notes = book.active.cell(policy_rows[-1], 11).value
         assert ('ביטול פוליסה' in notes) == cancelled
         assert saved_note in notes

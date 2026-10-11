@@ -21,6 +21,7 @@ from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.page import PageMargins
+from openpyxl.worksheet.pagebreak import Break
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.utils import get_column_letter
@@ -285,13 +286,21 @@ def create_export(request):
                     if excluded:
                         label += ' (מבוטל)' if cancelled else ' (מוחרג)'
                     coverage_options.append(label)
+                    hide_zero_annual = (section == 'ביטוח אלמנטרי' and valid
+                                        and freq == 'annual' and Decimal(normalized['premium']) == 0)
                     if cancelled:
                         note_lines.append(f'{names[customer.id]}: ביטול פוליסה')
-                    if values['additional_details']:
-                        note_lines.append(f'{names[customer.id]}: {values["additional_details"]}')
+                    details = values['additional_details']
+                    if hide_zero_annual:
+                        # Hide only this standalone source annotation in the presentation.
+                        # The full entry and its notes remain in the audit and calculations.
+                        details = '\n'.join(line for line in details.splitlines()
+                                            if not re.fullmatch(r'\s*\*\s*פוליסת\s+נהג\s+נקוב\s*', line))
+                    if details:
+                        note_lines.append(f'{names[customer.id]}: {details}')
                     if not valid or freq not in ('monthly', 'annual'):
                         note_lines.append(f'{names[customer.id]}: פרמיה או תדירות לא תקינה — {values["premium"]} / {values["frequency"]}')
-                    if valid and freq == 'annual':
+                    if valid and freq == 'annual' and not hide_zero_annual:
                         note_lines.append(f'{names[customer.id]}: פרמיה שנתית {normalized["premium"]} ₪' + (' (מבוטלת)' if cancelled else ' (מוחרגת)' if excluded else ''))
                 for cid, amounts in people.items():
                     owner_totals = customer_totals.setdefault((state, cid), [Decimal(0), Decimal(0), False])
@@ -406,21 +415,48 @@ def create_export(request):
             calc.cell(summary_row, 13).number_format = MONEY
             summary_row += 1
 
-    band('סיכום פגישה והמלצות', PALE)
-    for _ in range(3):
-        r = sheet.max_row + 1
-        sheet.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
-        style(r, fill='DCEEF3')
-        sheet.row_dimensions[r].height = 18
+    meeting_header = band('סיכום פגישה והמלצות', 'DCEEF3')
+    meeting_body = meeting_header + 1
+    style(meeting_body, fill='DCEEF3')
+    outline = Side(style='thin', color=NAVY)
+    for r in (meeting_header, meeting_body):
+        for col in range(1, 14):
+            sheet.cell(r, col).border = Border(
+                top=outline if r == meeting_header else Side(),
+                bottom=outline if r == meeting_body else Side(),
+                left=outline if col == 1 else Side(),
+                right=outline if col == 13 else Side(),
+            )
+    sheet.merge_cells(start_row=meeting_body, start_column=1, end_row=meeting_body, end_column=13)
+    sheet.cell(meeting_body, 1).alignment = Alignment(horizontal='right', vertical='top', wrap_text=True, readingOrder=2)
+    sheet.row_dimensions[meeting_body].height = 120
     sheet.sheet_properties.tabColor = NAVY
     sheet.sheet_view.zoomScale = 85
-    sheet.freeze_panes = 'D6'
+    sheet.freeze_panes = 'A6'
     sheet.sheet_properties.pageSetUpPr.fitToPage = True
     sheet.page_setup.orientation = 'landscape'
     sheet.page_setup.paperSize = sheet.PAPERSIZE_A4
     sheet.page_setup.fitToWidth = 1
     sheet.page_setup.fitToHeight = 0
     sheet.page_margins = PageMargins(left=.2, right=.2, top=.25, bottom=.25, header=0, footer=0)
+    # Keep the summary heading with its writing box when printing at one-page width.
+    # A4 landscape dimensions are in points; Excel column widths use 7-pixel
+    # characters plus 5 pixels of padding with the workbook's default Calibri 11.
+    printable_width = 297 / 25.4 * 72 - (sheet.page_margins.left + sheet.page_margins.right) * 72
+    printable_height = 210 / 25.4 * 72 - (sheet.page_margins.top + sheet.page_margins.bottom) * 72
+    width_points = sum(width * 7 + 5 for width in WIDTHS) * .75
+    print_scale = min(1, printable_width / width_points)
+    # Leave a small allowance for printer/Excel rounding of widths and heights.
+    page_height = printable_height / print_scale - 15
+    used_height = 0
+    for r in range(1, meeting_header):
+        dimension = sheet.row_dimensions[r]
+        height = 0 if dimension.hidden else dimension.height or sheet.sheet_format.defaultRowHeight
+        if used_height + height > page_height:
+            used_height = 0
+        used_height += height
+    if used_height + sheet.row_dimensions[meeting_header].height + sheet.row_dimensions[meeting_body].height > page_height:
+        sheet.row_breaks.append(Break(id=meeting_header - 1))
     sheet.print_area = f'A1:M{sheet.max_row}'
     output = BytesIO()
     book.save(output)

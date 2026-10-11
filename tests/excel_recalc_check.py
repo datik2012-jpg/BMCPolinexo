@@ -88,8 +88,12 @@ try:
                 if cell.HasFormula:
                     assert not str(cell.Text).startswith(('#REF!', '#VALUE!', '#N/A', '#NAME?', '#DIV/0!', '#NUM!'))
     summary_row = next(r for r in range(1, sheet.UsedRange.Rows.Count + 1) if sheet.Cells(r, 1).Value == 'סיכום פגישה והמלצות')
-    assert sheet.Cells(summary_row + 1, 1).Value is None
-    sheet.Cells(summary_row + 1, 1).Value = 'סיכום סינתטי למילוי הסוכן'
+    summary = sheet.Cells(summary_row + 1, 1)
+    assert summary.Value is None
+    assert summary.MergeArea.Columns.Count == 13 and summary.MergeArea.Rows.Count == 1
+    assert summary.RowHeight == 120 and summary.WrapText
+    summary_text = 'סיכום סינתטי למילוי הסוכן\nהמלצות סינתטיות בשורה נוספת באותה תיבה'
+    summary.Value = summary_text
     app.CalculateFullRebuild()
     assert [sheet.Cells(r, 9).Value for r in family_rows] == family
     sheet.ExportAsFixedFormat(0, str(ROOT / 'test-results/compact-export-preview.pdf'))
@@ -99,7 +103,8 @@ try:
     book = call(lambda: app.Workbooks.Open(str(saved), UpdateLinks=0, ReadOnly=True))
     assert call(lambda: book.Worksheets(1).Cells(selectors[0], 7).Validation.Type) == 3
     assert call(lambda: book.Worksheets(1).Cells(selectors[0], 4).Validation.Type) == 3
-    assert call(lambda: book.Worksheets(1).Cells(summary_row + 1, 1).Value) == 'סיכום סינתטי למילוי הסוכן'
+    assert call(lambda: book.Worksheets(1).Cells(summary_row + 1, 1).Value) == summary_text
+    assert call(lambda: book.Worksheets(1).Cells(summary_row + 1, 1).MergeArea.Columns.Count) == 13
     print(f'PASS: {choices} insured choices, {coverage_choices} coverage choices, both states, stable family totals, formulas, save/reopen and PDF render')
 finally:
     if book is not None:

@@ -71,6 +71,25 @@ Agent fields use one compact row on wide screens. Choose **סיום עריכה**
 
 ## Native development and checks
 
+### VS Code workspace
+
+This application uses Python and TypeScript, with no .NET solution. Local packaging
+tools under `build/tools` can contain unrelated C# examples (such as Inno Setup's
+`Examples/MyDll/C#/MyDll.csproj`). C# Dev Kit can discover these examples, generate
+a cached `BMCPolinexo.sln`, and report NuGet restore errors such as
+`MSB1001: Unknown switch` for `--nodereuse:false`.
+
+The repository's `.vscode/settings.json` sets `dotnet.preferCSharpExtension` to
+`true` to disable C# Dev Kit for this workspace, and `dotnet.defaultSolution` to
+`disable` to prevent the C# extension from automatically loading a solution.
+These settings do not change other workspaces or suppress application diagnostics.
+After applying them to an already open window, run **Developer: Reload Window**
+from the Command Palette (`Ctrl+Shift+P`) to clear the previous NuGet diagnostics.
+See the [C# Dev Kit FAQ](https://code.visualstudio.com/docs/csharp/cs-dev-kit-faq#why-isnt-c-dev-kit-activating--c-dev-kit-commands-are-not-found)
+for the workspace opt-out setting.
+
+### Running locally
+
 Use Python 3.12 and Node.js 22. In a terminal at the repository root:
 
 ```powershell
@@ -137,9 +156,11 @@ Use **ייצוא ל־Excel** from either state to download every customer in the
 
 The visible Hebrew RTL worksheet retains the logo, agent fields and customer-column order from the reference. Nine compact insurance columns run right to left: insurer logo, insurer name, policy number, coverages, insurance start date, insured selector, monthly premium, plan classification, agent instructions. The reference-style customer table includes insurance age at last birthday, evaluated on the agent date (or export date if unavailable). Agent name and date sit beside a proportional BMC logo in a white header block. Dark blue state headings, blue table bands and alternating pale rows follow the approved reference. Each state separates private and general insurance when present, omitting empty sections. **כיסויים** is a native Excel dropdown: the cell initially shows the insurance category (or a coverage-count heading), and the list contains that policy’s coverage names. Selecting a coverage only changes the displayed name; the policy premium still follows **מבוטחים**. Repeated display names share one menu option, while every underlying coverage and premium remains preserved. Coverage count alone does not increase the policy row’s height; ordinary rows start at 32 points. All distinct start dates and classifications appear on separate lines in their cells, increasing row height as needed. Unrecognized period text is preserved rather than converted to a guessed date. Very long date/classification lists and notes use continuation rows before Excel’s row-height limit. Full coverage periods remain in the audit sheet. Complete insurer/policy keys group for display across owners; incomplete keys remain separate. Every coverage is counted once, including zero premiums and suspected duplicates; there is no guessed allocation or automatic deduplication. Excluded coverages remain labelled but contribute no premium.
 
-Current state uses the processed import baseline; new state includes only explicitly copied coverages with their saved edits and exclusions. Uncopied coverage is not cancelled. Notes remain separate by state and are shown in the leftmost column, with continuation rows for long text. **סיכום פגישה והמלצות** is an empty, editable, full-width writing area at the bottom of the downloaded workbook. The agent fills it in Excel only; there is no matching app field or API storage, and reference example text is never copied into an export. Dates, categories, originals, corrections, exclusions and source row references remain available in the hidden **מקור ושינויים** sheet. The hidden **נתוני חישוב** sheet contains each policy's family and individual amounts and separate per-customer totals for each state.
+Current state uses the processed import baseline; new state includes only explicitly copied coverages with their saved edits and exclusions. Uncopied coverage is not cancelled. Notes remain separate by state and are shown in the leftmost column, with continuation rows for long text. **סיכום פגישה והמלצות** is one empty, editable, full-width merged writing cell at the bottom of the downloaded workbook. The 120-point-high cell wraps Hebrew text from the top right; its pale-blue fill and outer border continue around the heading, with no internal dividing lines. Use Alt+Enter for a new line within the box. Export adds a page break before the heading when the box would cross the calculated A4 landscape print boundary. The agent fills it in Excel only; there is no matching app field or API storage, and reference example text is never copied into an export. Dates, categories, originals, corrections, exclusions and source row references remain available in the hidden **מקור ושינויים** sheet. The hidden **נתוני חישוב** sheet contains each policy's family and individual amounts and separate per-customer totals for each state.
 
-Native Excel dropdowns and exact-match formulas update each row's monthly premium. **סה"כ בחודש למשפחה** always counts the entire family; **סה"כ חודשי לפי הבחירה** follows the selectors. Annual premiums have a separately labelled total and are never divided into or shown as monthly payments. Zero annual total rows are hidden in the presentation while their values remain in the workbook. Missing/invalid premiums are identified and totals are marked partial. Policy/identity numbers retain leading zeros; source strings beginning with `=` remain literal text. Print layout fits one page across with unrestricted pages down.
+In the general-insurance section (**ביטוח אלמנטרי**), a valid zero annual premium does not add a **פרמיה שנתית 0 ₪** instruction line. For that same coverage only, standalone **\*פוליסת נהג נקוב** note lines are omitted from the visible instructions. Nonzero annual premiums, other notes, cancellation instructions and invalid-data warnings remain visible. This display rule is evaluated separately for existing and proposed values; every coverage, premium and original/corrected note remains intact in the hidden sheets.
+
+Native Excel dropdowns and exact-match formulas update each row's monthly premium. **סה"כ בחודש למשפחה** always counts the entire family; **סה"כ חודשי לפי הבחירה** follows the selectors. Annual premiums have a separately labelled total and are never divided into or shown as monthly payments. Zero annual total rows are hidden in the presentation while their values remain in the workbook. Missing/invalid premiums are identified and totals are marked partial. Policy/identity numbers retain leading zeros; source strings beginning with `=` remain literal text. Print layout fits one page across with unrestricted pages down. Only the first five rows are frozen; columns scroll together without a vertical frozen-pane divider.
 
 Export is generated in memory and downloaded to the agent's computer. The server does not save it. Downloads remain after the browser workspace clears. Requests are limited to 5 MiB, 50 customers and 20,000 coverages. Unsupported Excel cell text is rejected instead of silently truncated. Refresh and server restart still clear the workspace.
 

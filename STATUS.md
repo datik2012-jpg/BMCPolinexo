@@ -1,3 +1,23 @@
+# Single Excel meeting-summary box — 2026-10-11
+
+- Replaced the three individual summary lines with one full-width, 120-point merged writing cell. The heading and input share a pale-blue background and outer border, with no internal lines. Hebrew text wraps from the top right; Alt+Enter adds a line inside the box. The input remains blank until the agent edits the downloaded workbook.
+- Added a print-boundary check to move the heading together with the writing box when needed at the configured A4 landscape width. Checked short and longer synthetic layouts and inspected Excel's rendered output with the heading and multiline input together.
+- All 47 backend tests passed; all 30 export tests passed again after the print adjustment. The real browser export regression passed. Native Excel verified six insured choices, eight coverage choices, stable totals, formula results, multiline summary editing and save/reopen.
+- Rebuilt/recreated only API. The final live export contains the single blank RTL writing box, and localhost page/API returned HTTP 200. Web was not restarted. Updated README, API contract and existing export/native-Excel checks; test artifacts remain synthetic and ignored.
+
+# Remove vertical Excel freeze divider — 2026-10-11
+
+- Changed the visible worksheet's freeze position from D6 to A6. Columns A-C are no longer frozen, removing the vertical divider between C and D; the first five rows remain frozen.
+- All 30 export tests passed. Inspected a synthetic workbook from the rebuilt localhost API and confirmed no column split (xSplit), with five frozen rows retained.
+- Updated README and the API contract. Rebuilt/recreated only API; API is healthy, web remains running, and localhost page/API returned HTTP 200.
+
+# Hide zero annual general-insurance export notes — 2026-10-11
+
+- In the Excel general-insurance section, valid zero annual premiums no longer add an annual-premium instruction line. Standalone named-driver policy annotations are hidden only for the same zero-annual coverage, as confirmed by the user.
+- Existing and proposed values are handled independently. Nonzero premiums, other instructions, cancellation text, invalid-data warnings, coverage selectors, totals and complete hidden source/correction records remain intact.
+- All 47 backend tests passed, including nine new cases for zero formats, source preservation, cancellation, changes between zero/nonzero premiums and scope boundaries. The browser download regression passed against Docker with mixed zero/nonzero annual coverages for two owners.
+- Rebuilt/recreated only API. Local page and API endpoints returned HTTP 200; web was not restarted. Updated README and the API contract. Verification used synthetic data only.
+
 # Menora logo size in Excel — 2026-10-10
 
 - Replaced only the Excel Menora asset with the wide official wordmark (296×91), extracted unchanged from the SVG linked on Menora's website. This removes the square source image's excess white margins so the existing proportional fitting gives the mark comparable visual width to other insurer logos. Frontend assets and export logic are unchanged.

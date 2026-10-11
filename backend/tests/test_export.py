@@ -260,10 +260,19 @@ def test_reference_layout_dates_classifications_and_blank_meeting_summary():
     assert sheet.row_dimensions[row].height >= 44
     assert '01/02/2020 - 31/01/2030' in str(list(book['מקור ושינויים'].values))
     summary = next(c.row for cells in sheet for c in cells if c.value == 'סיכום פגישה והמלצות')
-    assert sheet.max_row == summary + 3
+    assert sheet.max_row == summary + 1
     assert not sheet.protection.sheet
-    assert all(sheet.cell(r, 1).value is None for r in range(summary + 1, summary + 4))
-    assert all(f'A{r}:M{r}' in sheet.merged_cells for r in range(summary + 1, summary + 4))
+    writing_cell = sheet.cell(summary + 1, 1)
+    assert writing_cell.value is None
+    assert f'A{summary + 1}:M{summary + 1}' in sheet.merged_cells
+    assert sheet.row_dimensions[summary + 1].height == 120
+    assert writing_cell.alignment.wrap_text and writing_cell.alignment.readingOrder == 2
+    assert writing_cell.alignment.horizontal == 'right' and writing_cell.alignment.vertical == 'top'
+    assert writing_cell.fill.fgColor == sheet.cell(summary, 1).fill.fgColor
+    assert writing_cell.border.top.style is None
+    assert sheet.cell(summary, 1).border.bottom.style is None
+    assert writing_cell.border.bottom.style == sheet.cell(summary, 1).border.top.style == 'thin'
+    assert writing_cell.border.left.style == sheet.cell(summary + 1, 13).border.right.style == 'thin'
     assert totals(values, 'סה"כ בחודש למשפחה') == [20.2, 0]
     # Images must fit inside their cells with padding and retain source aspect ratio.
     from PIL import Image as PillowImage
@@ -305,3 +314,90 @@ def test_many_dates_and_classifications_preserve_all_values_with_continuations()
 def test_export_insurance_age_at_last_birthday(birth, on_date, expected):
     from app.compact_export import insurance_age, parsed_date
     assert insurance_age(birth, parsed_date(on_date)) == expected
+
+
+@pytest.mark.parametrize('zero', ['0', '0.00', '₪ 0.00'])
+def test_general_insurance_zero_annual_notes_are_hidden_without_losing_coverages(zero):
+    a = customer()
+    driver_note = '*פוליסת נהג נקוב'
+    manual_note = 'הוראה חשובה\n' + driver_note + '\nהערה נוספת'
+    report = parse_workbook(fixture([
+        row(insured_id=a['id'], category='ביטוח רכב', frequency='שנתית',
+            product_type=f'כיסוי {index}', premium=premium, additional_details=note)
+        for index, (premium, note) in enumerate([
+            ('120', driver_note), (zero, driver_note), (zero, manual_note),
+            (zero, '*פוליסת נהג נקוב — הוראה נוספת'),
+        ])
+    ]))
+    report['instance_id'] = INSTANCE_ID
+    a['report'] = report
+    for entry in report['entries']:
+        entry['baseline'] = deepcopy(entry['values'])
+        entry['copied'] = True
+    report['entries'][2]['excluded'] = True
+    snapshot = deepcopy(a)
+
+    book, values = exported([a])
+    rows = policy_rows(book)
+    assert len(rows) == 2
+    for selector in rows:
+        notes = book.active.cell(selector.row, 11).value
+        assert 'פרמיה שנתית 0' not in notes
+        assert notes.count('בדיקה סינתטי: ' + driver_note + '\n') == 1
+        assert 'פרמיה שנתית 120 ₪' in notes
+        assert 'הוראה חשובה\nהערה נוספת' in notes
+        assert '*פוליסת נהג נקוב — הוראה נוספת' in notes
+    assert 'ביטול פוליסה' not in book.active.cell(rows[0].row, 11).value
+    assert 'ביטול פוליסה' in book.active.cell(rows[1].row, 11).value
+    assert totals(values, 'סה"כ בחודש למשפחה') == [0, 0]
+    assert totals(values, 'סה"כ פרמיות שנתיות למשפחה (לא תשלום חודשי)') == [120, 120]
+    audit = book['מקור ושינויים']
+    assert audit.max_row == 9
+    for audit_row in audit.iter_rows(min_row=2, values_only=True):
+        entry = next(e for e in report['entries'] if e['id'] == audit_row[2])
+        assert audit_row[3:5] == (entry['source_sheet'], entry['source_row'])
+        assert audit_row[24:27] == (entry['original']['additional_details'],
+                                   entry['baseline']['additional_details'], entry['values']['additional_details'])
+        assert audit_row[27:30] == (entry['original']['premium'],
+                                   entry['baseline']['premium'], entry['values']['premium'])
+    assert a == snapshot
+
+
+@pytest.mark.parametrize('baseline,proposed', [('0', '15'), ('15', '0')])
+def test_zero_annual_note_visibility_uses_each_states_premium(baseline, proposed):
+    a = customer()
+    entry = a['report']['entries'][0]
+    entry['values'].update(category='ביטוח רכב', frequency='annual', premium=baseline,
+                           additional_details='*פוליסת נהג נקוב')
+    entry['baseline'] = deepcopy(entry['values'])
+    entry['copied'] = True
+    entry['values']['premium'] = proposed
+    a['report']['entries'] = [entry]
+    book, values = exported([a])
+    for selector, premium in zip(policy_rows(book), [baseline, proposed]):
+        notes = book.active.cell(selector.row, 11).value or ''
+        assert ('*פוליסת נהג נקוב' in notes) == (premium != '0')
+        assert ('פרמיה שנתית' in notes) == (premium != '0')
+        if premium == '0':
+            assert notes == ''
+            assert book.active.row_dimensions[selector.row].height == 32
+    assert totals(values, 'סה"כ פרמיות שנתיות למשפחה (לא תשלום חודשי)') == [int(baseline), int(proposed)]
+
+
+@pytest.mark.parametrize('category,frequency,premium,warning', [
+    ('ביטוח בריאות', 'annual', '0', False),
+    ('ביטוח רכב', 'monthly', '0', False),
+    ('ביטוח דירה', 'annual', 'bad', True),
+    ('ביטוח דירה', '?', '0', True),
+])
+def test_zero_annual_note_filter_preserves_other_sections_and_invalid_data(category, frequency, premium, warning):
+    a = customer()
+    entry = a['report']['entries'][0]
+    entry['values'].update(category=category, frequency=frequency, premium=premium,
+                           additional_details='*פוליסת נהג נקוב')
+    a['report']['entries'] = [entry]
+    book, _ = exported([a])
+    notes = book.active.cell(policy_rows(book)[0].row, 11).value
+    assert '*פוליסת נהג נקוב' in notes
+    assert ('פרמיה או תדירות לא תקינה' in notes) == warning
+    assert ('הסכומים חלקיים' in notes) == warning
