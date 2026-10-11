@@ -9,11 +9,14 @@ from app.exporter import ExportRequest, create_export
 
 a, b = customer(), customer('000000002', 'שני')
 for c in [a, b]:
+    c['details']['birthDate'] = '1986-10-11'
     for index, e in enumerate(c['report']['entries']):
         e['values']['category'] = 'ביטוח בריאות'
         e['values']['product_type'] = ['השתלות וטיפולים', 'ייעוץ ובדיקות', 'ניתוחים בישראל'][index]
         e['values']['insurer'] = 'הראל'
         e['values']['policy_number'] = '000123'
+        e['values']['period'] = ['01/01/2020 - 31/12/2030', '04/03/2021 - 03/03/2031', 'מתחדש'][index]
+        e['values']['classification'] = 'אישי' if index != 1 else 'קבוצתי'
         e['baseline'] = deepcopy(e['values'])
         e['copied'] = True
 a['report']['entries'][0]['values']['premium'] = '20.20'

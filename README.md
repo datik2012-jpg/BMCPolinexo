@@ -2,11 +2,13 @@
 
 Local Hebrew RTL insurance portfolio review for one employee. Import a Har HaBituach XLSX, inspect grouped policies, temporarily correct coverage fields, exclude or restore entries, and compare with the original source. Monthly and annual premiums remain separate. This pilot has no accounts or database.
 
-Windows release: [v1.2.1-windows](https://github.com/datik2012-jpg/BMCPolinexo/tree/v1.2.1-windows), built from `feature/windows-installer` with `main` through `5d0140a`. One x64 installer supports Windows 10 and 11, including the compact shared selector, existing/proposed workflow and compact Excel dropdown export. See [Windows build and verification](docs/WINDOWS.md).
+Windows release: [v1.2.2-windows](https://github.com/datik2012-jpg/BMCPolinexo/tree/v1.2.2-windows), built from `feature/windows-installer` with approved `main` changes through `98deb4e`. One x64 installer supports Windows 10 and 11, including the revised Excel layout, one meeting-summary writing box, customer ages, start dates/classifications, cancellation instructions and zero-annual-note display rules. See [Windows build and verification](docs/WINDOWS.md).
 
 First product version: [v1.0.0](https://github.com/datik2012-jpg/BMCPolinexo/tree/v1.0.0), published on 2026-09-24. See [STATUS.md](STATUS.md) for verification and handoff notes.
 
 ## Policy display and corrections
+
+In **מצב חדש**, **ביטול** marks the selected coverage for cancellation and omits its premium from proposed totals. **שחזור** clears the cancellation and restores the saved edits, agent instructions and premium. Existing-state coverages remain intact. While cancellation is active, Excel adds **ביטול פוליסה** in the proposed policy’s leftmost **הוראות הסוכן** column alongside any saved text, even when no instructions were entered. Restoring removes this automatic instruction from subsequent exports. This is a temporary proposal/export designation; it does not send a cancellation to an insurer.
 
 Edited coverage rows do not display a **תוקן** label in the actions column. Correction tracking and source comparison remain available. Zero annual totals are hidden in the UI, including shared-policy customer summaries and zero annual differences in source comparison. Nonzero annual amounts and incomplete-data warnings remain visible; source premiums and Excel data remain preserved.
 
@@ -89,6 +91,25 @@ Agent fields use one compact row on wide screens. Choose **סיום עריכה**
 
 ## Native development and checks
 
+### VS Code workspace
+
+This application uses Python and TypeScript, with no .NET solution. Local packaging
+tools under `build/tools` can contain unrelated C# examples (such as Inno Setup's
+`Examples/MyDll/C#/MyDll.csproj`). C# Dev Kit can discover these examples, generate
+a cached `BMCPolinexo.sln`, and report NuGet restore errors such as
+`MSB1001: Unknown switch` for `--nodereuse:false`.
+
+The repository's `.vscode/settings.json` sets `dotnet.preferCSharpExtension` to
+`true` to disable C# Dev Kit for this workspace, and `dotnet.defaultSolution` to
+`disable` to prevent the C# extension from automatically loading a solution.
+These settings do not change other workspaces or suppress application diagnostics.
+After applying them to an already open window, run **Developer: Reload Window**
+from the Command Palette (`Ctrl+Shift+P`) to clear the previous NuGet diagnostics.
+See the [C# Dev Kit FAQ](https://code.visualstudio.com/docs/csharp/cs-dev-kit-faq#why-isnt-c-dev-kit-activating--c-dev-kit-commands-are-not-found)
+for the workspace opt-out setting.
+
+### Running locally
+
 Use Python 3.12 and Node.js 22. In a terminal at the repository root:
 
 ```powershell
@@ -153,11 +174,13 @@ Selections and shared presentation exist only in memory. Removing customers upda
 
 Use **ייצוא ל־Excel** from either state to download every customer in the family workspace, including customer cards without an uploaded report. Both **מצב קיים** and **מצב חדש** appear in the same report. Export from a single customer's view initially selects that person on applicable policy rows; shared-view exports select **כל המשפחה**, including a proposal in which only one family member has copied coverages. Policies belonging only to other family members retain the family selection.
 
-The visible Hebrew RTL worksheet retains the logo, agent fields and customer-column order from the reference. Seven compact insurance columns run right to left: insurer logo, insurer name, policy number, coverages, insured selector, monthly premium, agent notes. Each state separates private and general insurance. **כיסויים** is a native Excel dropdown: the cell initially shows the insurance category (or a coverage-count heading), and the list contains that policy’s coverage names. Selecting a coverage only changes the displayed name; the policy premium still follows **מבוטחים**. Repeated display names share one menu option, while every underlying coverage and premium remains preserved. Coverage count no longer increases the policy row’s height; ordinary rows are 32 points. Complete insurer/policy keys group for display across owners; incomplete keys remain separate. Every coverage is counted once, including zero premiums and suspected duplicates; there is no guessed allocation or automatic deduplication. Excluded coverages remain labelled but contribute no premium.
+The visible Hebrew RTL worksheet retains the logo, agent fields and customer-column order from the reference. Nine compact insurance columns run right to left: insurer logo, insurer name, policy number, coverages, insurance start date, insured selector, monthly premium, plan classification, agent instructions. The reference-style customer table includes insurance age at last birthday, evaluated on the agent date (or export date if unavailable). Agent name and date sit beside a proportional BMC logo in a white header block. Dark blue state headings, blue table bands and alternating pale rows follow the approved reference. Each state separates private and general insurance when present, omitting empty sections. **כיסויים** is a native Excel dropdown: the cell initially shows the insurance category (or a coverage-count heading), and the list contains that policy’s coverage names. Selecting a coverage only changes the displayed name; the policy premium still follows **מבוטחים**. Repeated display names share one menu option, while every underlying coverage and premium remains preserved. Coverage count alone does not increase the policy row’s height; ordinary rows start at 32 points. All distinct start dates and classifications appear on separate lines in their cells, increasing row height as needed. Unrecognized period text is preserved rather than converted to a guessed date. Very long date/classification lists and notes use continuation rows before Excel’s row-height limit. Full coverage periods remain in the audit sheet. Complete insurer/policy keys group for display across owners; incomplete keys remain separate. Every coverage is counted once, including zero premiums and suspected duplicates; there is no guessed allocation or automatic deduplication. Excluded coverages remain labelled but contribute no premium.
 
-Current state uses the processed import baseline; new state includes only explicitly copied coverages with their saved edits and exclusions. Uncopied coverage is not cancelled. Notes remain separate by state and are shown in the leftmost column, with continuation rows for long text. Dates, categories, originals, corrections, exclusions and source row references remain available in the hidden **מקור ושינויים** sheet. The hidden **נתוני חישוב** sheet contains each policy's family and individual amounts and separate per-customer totals for each state.
+Current state uses the processed import baseline; new state includes only explicitly copied coverages with their saved edits and exclusions. Uncopied coverage is not cancelled. Notes remain separate by state and are shown in the leftmost column, with continuation rows for long text. **סיכום פגישה והמלצות** is one empty, editable, full-width merged writing cell at the bottom of the downloaded workbook. The 120-point-high cell wraps Hebrew text from the top right; its pale-blue fill and outer border continue around the heading, with no internal dividing lines. Use Alt+Enter for a new line within the box. Export adds a page break before the heading when the box would cross the calculated A4 landscape print boundary. The agent fills it in Excel only; there is no matching app field or API storage, and reference example text is never copied into an export. Dates, categories, originals, corrections, exclusions and source row references remain available in the hidden **מקור ושינויים** sheet. The hidden **נתוני חישוב** sheet contains each policy's family and individual amounts and separate per-customer totals for each state.
 
-Native Excel dropdowns and exact-match formulas update each row's monthly premium. **סה"כ בחודש למשפחה** always counts the entire family; **סה"כ חודשי לפי הבחירה** follows the selectors. Annual premiums have a separately labelled total and are never divided into or shown as monthly payments. Missing/invalid premiums are identified and totals are marked partial. Policy/identity numbers retain leading zeros; source strings beginning with `=` remain literal text. Print layout fits one page across with unrestricted pages down.
+In the general-insurance section (**ביטוח אלמנטרי**), a valid zero annual premium does not add a **פרמיה שנתית 0 ₪** instruction line. For that same coverage only, standalone **\*פוליסת נהג נקוב** note lines are omitted from the visible instructions. Nonzero annual premiums, other notes, cancellation instructions and invalid-data warnings remain visible. This display rule is evaluated separately for existing and proposed values; every coverage, premium and original/corrected note remains intact in the hidden sheets.
+
+Native Excel dropdowns and exact-match formulas update each row's monthly premium. **סה"כ בחודש למשפחה** always counts the entire family; **סה"כ חודשי לפי הבחירה** follows the selectors. Annual premiums have a separately labelled total and are never divided into or shown as monthly payments. Zero annual total rows are hidden in the presentation while their values remain in the workbook. Missing/invalid premiums are identified and totals are marked partial. Policy/identity numbers retain leading zeros; source strings beginning with `=` remain literal text. Print layout fits one page across with unrestricted pages down. Only the first five rows are frozen; columns scroll together without a vertical frozen-pane divider.
 
 Export is generated in memory and downloaded to the agent's computer. The server does not save it. Downloads remain after the browser workspace clears. Requests are limited to 5 MiB, 50 customers and 20,000 coverages. Unsupported Excel cell text is rejected instead of silently truncated. Refresh and server restart still clear the workspace.
 
@@ -167,7 +190,7 @@ Uploads and portfolios exist only in process/browser memory. There is no browser
 
 The entire multipart request is limited to 5 MiB, so the workbook must be slightly smaller. XLSX expansion is limited to 25 MiB and 2,000 ZIP members; worksheets are limited to 10,000 rows. Only one insured person and one populated coverage worksheet are supported. Unsupported or ambiguous inputs produce Hebrew messages. Unknown frequencies and invalid premiums make reconciliation incomplete; duplicate candidates remain included until explicitly excluded.
 
-The pilot trusts the local operating-system account and local machine. It is not intended for shared/network deployment. Use an appropriately secured workstation; memory-only application handling does not control operating-system swap or crash dumps. Never commit client files, put raw spreadsheet values into debug output, or enable analytics/request-body tracing. Client summaries, recommendations, notes, policy actions, and manual entry creation are outside this version.
+The pilot trusts the local operating-system account and local machine. It is not intended for shared/network deployment. Use an appropriately secured workstation; memory-only application handling does not control operating-system swap or crash dumps. Never commit client files, put raw spreadsheet values into debug output, or enable analytics/request-body tracing. In-app client summaries, meeting recommendations, standalone notes, insurer actions, and manual coverage creation are outside this version. The exported workbook alone has a blank meeting-summary/recommendations area for the agent.
 
 See `CONTRACT.md` for the import API and field conventions and `AGENTS.md` for durable project decisions.
 

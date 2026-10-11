@@ -49,7 +49,7 @@ def run():
         dialog.get_by_label('פרמיה', exact=True).fill('1600')
         dialog.get_by_role('button', name='שמירת תיקונים').click()
         expect(page.locator('.totals:visible').first).to_contain_text('5,655.00')
-        policy.get_by_role('button', name='החרגה', exact=True).first.click()
+        policy.get_by_role('button', name='ביטול', exact=True).first.click()
         expect(page.locator('.totals:visible').first).to_contain_text('4,055.00')
         policy.get_by_role('button', name='שחזור', exact=True).first.click()
         expect(page.locator('.totals:visible').first).to_contain_text('5,655.00')

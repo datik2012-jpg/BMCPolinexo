@@ -39,3 +39,7 @@ Add a verified local image, catalog entry and unambiguous aliases when another n
 
 
 Excel export uses raster copies in `backend/app/assets/insurers/` and an alias catalog derived from `frontend/src/insurers.ts`. PNG originals are copied unchanged; SVG artwork is rendered to transparent PNG with Chromium at 2x resolution. These are display-only aliases and never determine policy grouping. Export scales each image proportionally within its row. When updating a source logo or alias, update the export asset/catalog too. Unknown insurers retain their name with an empty logo cell.
+
+### Menora Excel sizing — 2026-10-10
+
+Excel uses the wide official Menora wordmark embedded as a 296×91 PNG in https://cdn.menoramivt.co.il/public/images/20230810/1nyh0dll4s6z1h-logo-menora-1@2x.svg (linked by the official homepage). The PNG is extracted unchanged, replacing the 500×500 square export asset whose large white margins made the artwork look much smaller. The standard proportional, centered cell sizing now applies to the visible wordmark. The frontend catalog asset is unchanged.

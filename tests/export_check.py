@@ -9,7 +9,7 @@ from customer_helpers import fill_customer
 
 
 def totals(book, label):
-    return [book.active.cell(c.row, 8).value for row in book.active for c in row if c.value == label]
+    return [book.active.cell(c.row, 9).value for row in book.active for c in row if c.value == label]
 
 
 with sync_playwright() as p:
@@ -30,7 +30,10 @@ with sync_playwright() as p:
                 'name': 'synthetic.xlsx', 'mimeType': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 'buffer': fixture_module.fixture([
                     fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000123', premium=10 + index, category='ביטוח בריאות'),
-                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=120, frequency='שנתית', category='ביטוח רכב'),
+                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=120, frequency='שנתית', category='ביטוח רכב',
+                                       additional_details='*פוליסת נהג נקוב'),
+                    fixture_module.row(insured_id=int(identity), insurer='הראל', policy_number='000456', premium=0,
+                                       frequency='שנתית', category='ביטוח רכב', additional_details='*פוליסת נהג נקוב'),
                 ])})
             expect(card.locator('.upload-success')).to_be_visible()
     section = page.get_by_role('region', name='תיק לקוח בדיקה0 סינתטי', exact=True)
@@ -42,9 +45,10 @@ with sync_playwright() as p:
     dialog = page.get_by_role('dialog')
     dialog.get_by_label('פרמיה', exact=True).fill('25.25')
     dialog.get_by_label('הוראות הסוכן', exact=True).fill('הערה סינתטית\n=1+1')
+    saved_note = dialog.get_by_label('הוראות הסוכן', exact=True).input_value()
     dialog.get_by_role('button', name='שמירת תיקונים', exact=True).click()
 
-    def download(scope):
+    def download(scope, cancelled=False):
         with page.expect_download() as event:
             scope.get_by_role('button', name='ייצוא ל־Excel', exact=True).click()
         item = event.value
@@ -53,19 +57,44 @@ with sync_playwright() as p:
         item.delete()
         book = load_workbook(BytesIO(data), data_only=True)
         assert book.sheetnames == ['תיק ביטוח', 'נתוני חישוב', 'מקור ושינויים']
+        sheet = book.active
+        summary = next(c.row for row in sheet for c in row if c.value == 'סיכום פגישה והמלצות')
+        assert sheet.max_row == summary + 1
+        assert f'A{summary + 1}:M{summary + 1}' in sheet.merged_cells
+        assert sheet.cell(summary + 1, 1).value is None
+        assert sheet.row_dimensions[summary + 1].height == 120
+        assert sheet.cell(summary + 1, 1).alignment.wrap_text
+        assert sheet.freeze_panes == 'A6'
         assert [book.active.cell(r, 2).value for r in (6, 7, 8)] == ['בדיקה0', 'בדיקה1', 'בדיקה2']
         coverage_lists = [v for v in book.active.data_validations.dataValidation if v.formula1.startswith('=Coverages_')]
         assert len(coverage_lists) == 3
         assert all(book.active[str(v.sqref)].column == 4 for v in coverage_lists)
         assert all(v.showDropDown is False for v in coverage_lists)
-        assert totals(book, 'סה"כ בחודש למשפחה') == [21, 25.25]
+        assert totals(book, 'סה"כ בחודש למשפחה') == [21, 0 if cancelled else 25.25]
         assert totals(book, 'סה"כ פרמיות שנתיות למשפחה (לא תשלום חודשי)') == [240, 0]
         assert any('הערה סינתטית' in str(c.value) for row in book.active for c in row)
+        policy_rows = [book.active[str(v.sqref)].row for v in book.active.data_validations.dataValidation if v.formula1.startswith('=Insured_')]
+        assert all('ביטול פוליסה' not in str(book.active.cell(r, 11).value) for r in policy_rows[:-1])
+        general_row = next(r for r in policy_rows if book.active.cell(r, 3).value == '000456')
+        general_notes = book.active.cell(general_row, 11).value
+        assert 'פרמיה שנתית 0' not in general_notes
+        assert general_notes.count('*פוליסת נהג נקוב') == 2  # Nonzero entries only, one per owner.
+        assert general_notes.count('פרמיה שנתית 120') == 2
+        notes = book.active.cell(policy_rows[-1], 11).value
+        assert ('ביטול פוליסה' in notes) == cancelled
+        assert saved_note in notes
+        assert any(c.value == 'הוראות הסוכן' for row in book.active for c in row)
         return book
 
     book = download(proposal)
     assert totals(book, 'סה"כ חודשי לפי הבחירה') == [10, 25.25]
     assert len(book.active._images) == 4  # Brand plus three policy groups.
+    proposal.get_by_role('button', name='ביטול', exact=True).click()
+    expect(proposal.locator('.totals').first).to_contain_text('0.00')
+    download(proposal, cancelled=True)
+    proposal.get_by_role('button', name='שחזור', exact=True).click()
+    expect(proposal.locator('.totals').first).to_contain_text('25.25')
+    download(proposal)
     selection = page.get_by_role('region', name='בחירת לקוחות לתצוגה משותפת')
     selection.get_by_role('checkbox', name='בדיקה0 סינתטי').check()
     selection.get_by_role('checkbox', name='בדיקה1 סינתטי').check()
@@ -80,6 +109,10 @@ with sync_playwright() as p:
     proposed_shared = page.locator('.shared-portfolio .proposed-section')
     book = download(proposed_shared)
     assert totals(book, 'סה"כ חודשי לפי הבחירה') == [21, 25.25]
+    proposed_shared.get_by_role('button', name='ביטול', exact=True).click()
+    download(proposed_shared, cancelled=True)
+    proposed_shared.get_by_role('button', name='שחזור', exact=True).click()
+    download(proposed_shared)
     page.locator('.shared-portfolio').get_by_role('tab', name='מצב קיים').click()
     for width in [1440, 390, 320]:
         page.set_viewport_size({'width': width, 'height': 1000})

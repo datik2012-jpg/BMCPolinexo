@@ -49,7 +49,7 @@ with sync_playwright() as p:
     expect(row.locator('.coverage-details')).to_contain_text('בדיקה משותפת')
     expect(policy.locator('.shared-monthly-total')).to_contain_text('47.00')
     expect(shared.get_by_role('region', name='בדיקה1 משפחה1 · מצב חדש · כיסויים שהועתקו בלבד')).to_contain_text('25.00')
-    row.get_by_role('button', name='החרגה', exact=True).click()
+    row.get_by_role('button', name='ביטול', exact=True).click()
     expect(policy.locator('.shared-monthly-total')).to_contain_text('22.00')
     expect(shared.get_by_role('region', name='בדיקה1 משפחה1 · מצב חדש · כיסויים שהועתקו בלבד')).to_contain_text('0.00')
     row.get_by_role('button', name='שחזור', exact=True).click()

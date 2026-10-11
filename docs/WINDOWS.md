@@ -1,13 +1,16 @@
 # Windows package
 
-## Release 1.2.1 — 2026-10-05
+## Release 1.2.2 — 2026-10-11
 
-One installer supports both Windows 10 and Windows 11 x64. This release merges
-`main` at `5d0140a` into `feature/windows-installer`; its tag is `v1.2.1-windows`.
-It includes the compact shared-customer selector, existing/proposed coverage
-workflow and compact Excel export with coverage/person dropdowns and logos.
+One installer targets both Windows 10 and Windows 11 x64. This release merges
+the approved Excel changes from `main` at `98deb4e` into
+`feature/windows-installer`; its tag is `v1.2.2-windows`.
+It includes the nine-column Excel layout, customer age at last birthday,
+all start dates/classifications, one large meeting-summary writing box,
+updated insurer logos, cancellation instructions, zero-annual-note display
+rules and removal of the vertical frozen-column divider.
 The Windows localhost launcher and connection-loss clearing remain enabled.
-
+The meeting-summary box is filled only in the downloaded workbook.
 
 ## Employee installation
 
@@ -48,9 +51,9 @@ Install Python 3.12 x64 (including Tcl/Tk), Node.js 22, Git, and Inno Setup
 Build from a full Git clone; release builds should use a clean reviewed checkout.
 
 ```powershell
-./packaging/windows/build.ps1 -Version 1.2.1
+./packaging/windows/build.ps1 -Version 1.2.2
 # If Inno Setup is installed elsewhere:
-./packaging/windows/build.ps1 -Version 1.2.1 -Iscc 'C:/path/to/ISCC.exe'
+./packaging/windows/build.ps1 -Version 1.2.2 -Iscc 'C:/path/to/ISCC.exe'
 ```
 
 The script creates `.build-venv`, installs pinned runtime/build dependencies,
@@ -60,7 +63,7 @@ installer preprocessor. Outputs:
 
 - `dist/windows/BMCPolinexo/`: runnable folder including Python and Tcl/Tk.
 - `dist/windows/bundle-manifest.json`: relative file paths and SHA-256 hashes.
-- `dist/releases/1.2.1/BMCPolinexo-Setup.exe`: employee installer; the build prints
+- `dist/releases/1.2.2/BMCPolinexo-Setup.exe`: employee installer; the build prints
   its SHA-256 hash. Distribute it through the organization's approved channel.
 
 No repository-wide data glob is used. The backend is collected as Python

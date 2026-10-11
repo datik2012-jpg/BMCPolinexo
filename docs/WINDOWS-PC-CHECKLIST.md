@@ -3,7 +3,7 @@
 Use this checklist on **Windows 10 x64** and **Windows 11 x64**, as a normal
 non-admin user. The PC should have no Docker, Python or Node.js installed.
 
-Copy version **1.2.1** of `BMCPolinexo-Setup.exe` and the separately supplied `synthetic-test.xlsx` to
+Copy version **1.2.2** of `BMCPolinexo-Setup.exe` and the separately supplied `synthetic-test.xlsx` to
 the PC. The workbook contains invented data only and is not inside the installer.
 
 1. Disconnect the internet, install, and open the desktop shortcut. No
@@ -14,9 +14,13 @@ the PC. The workbook contains invented data only and is not inside the installer
    synthetic workbook. Expect **20 coverages**, **8 policy groups**, monthly
    total **₪763.32**, and separate annual total **₪5,642.00**.
 3. In **מצב קיים**, copy a coverage using **העתקה למצב החדש**, then switch to
-   **מצב חדש** to edit its premium, exclude/restore it and compare the source.
+   **מצב חדש** to edit its premium, cancel/restore it and compare the source.
    Verify the existing baseline remains unchanged. Export Excel and verify both
-   states, logos, coverage/person dropdowns and separate monthly/annual totals.
+   states, logos, coverage/person dropdowns, age/start-date/classification fields
+   and separate monthly/annual totals. Confirm the blank **סיכום פגישה והמלצות**
+   area is one large writing box. Enter two lines with Alt+Enter, save, and reopen.
+   Check that cancellation adds **ביטול פוליסה** only in the proposed state
+   and restoring removes it on the next export.
    Add a second synthetic customer and check that **הצגת לקוחות יחד** appears
    compactly immediately after **+ הוסף לקוח נוסף**.
 4. Open the shortcut again: the same launcher should be reused. Close the

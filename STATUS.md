@@ -1,3 +1,53 @@
+# Single Excel meeting-summary box — 2026-10-11
+
+- Replaced the three individual summary lines with one full-width, 120-point merged writing cell. The heading and input share a pale-blue background and outer border, with no internal lines. Hebrew text wraps from the top right; Alt+Enter adds a line inside the box. The input remains blank until the agent edits the downloaded workbook.
+- Added a print-boundary check to move the heading together with the writing box when needed at the configured A4 landscape width. Checked short and longer synthetic layouts and inspected Excel's rendered output with the heading and multiline input together.
+- All 47 backend tests passed; all 30 export tests passed again after the print adjustment. The real browser export regression passed. Native Excel verified six insured choices, eight coverage choices, stable totals, formula results, multiline summary editing and save/reopen.
+- Rebuilt/recreated only API. The final live export contains the single blank RTL writing box, and localhost page/API returned HTTP 200. Web was not restarted. Updated README, API contract and existing export/native-Excel checks; test artifacts remain synthetic and ignored.
+
+# Remove vertical Excel freeze divider — 2026-10-11
+
+- Changed the visible worksheet's freeze position from D6 to A6. Columns A-C are no longer frozen, removing the vertical divider between C and D; the first five rows remain frozen.
+- All 30 export tests passed. Inspected a synthetic workbook from the rebuilt localhost API and confirmed no column split (xSplit), with five frozen rows retained.
+- Updated README and the API contract. Rebuilt/recreated only API; API is healthy, web remains running, and localhost page/API returned HTTP 200.
+
+# Hide zero annual general-insurance export notes — 2026-10-11
+
+- In the Excel general-insurance section, valid zero annual premiums no longer add an annual-premium instruction line. Standalone named-driver policy annotations are hidden only for the same zero-annual coverage, as confirmed by the user.
+- Existing and proposed values are handled independently. Nonzero premiums, other instructions, cancellation text, invalid-data warnings, coverage selectors, totals and complete hidden source/correction records remain intact.
+- All 47 backend tests passed, including nine new cases for zero formats, source preservation, cancellation, changes between zero/nonzero premiums and scope boundaries. The browser download regression passed against Docker with mixed zero/nonzero annual coverages for two owners.
+- Rebuilt/recreated only API. Local page and API endpoints returned HTTP 200; web was not restarted. Updated README and the API contract. Verification used synthetic data only.
+
+# Menora logo size in Excel — 2026-10-10
+
+- Replaced only the Excel Menora asset with the wide official wordmark (296×91), extracted unchanged from the SVG linked on Menora's website. This removes the square source image's excess white margins so the existing proportional fitting gives the mark comparable visual width to other insurer logos. Frontend assets and export logic are unchanged.
+- All 21 export tests passed. Rebuilt/recreated only API; localhost page and API returned HTTP 200. Official source and asset provenance recorded in `docs/INSURER_LOGOS.md`.
+
+# Restore previous cancellation wording — 2026-10-10
+
+- At the user's request, reverted the most recent coverage-specific Excel cancellation wording and its new regression cases. Restored **ביטול פוליסה** alongside the agent instructions. The reference-style layout and earlier changes remain intact.
+
+# Coverage-specific cancellation instructions — 2026-10-10
+
+- Corrected Excel cancellation wording from **ביטול פוליסה** to **ביטול כיסוי**, identifying the coverage name, owner and source sheet/row. A cancelled coverage never labels its entire policy cancelled; other coverage statuses, saved instructions and premiums remain unchanged.
+- Added regressions for cancelling one of three coverages in the same policy, including repeated coverage names, unchanged input data, exact totals and restoration. All 40 backend tests passed. Updated the browser export checks and durable export documentation.
+- Rebuilt/recreated only the local API service; web remains running. Source data and the workbook are still generated/handled in memory.
+
+# Reference-style Excel export — 2026-10-10
+
+- On `feature/fixed_excel`, redesigned the downloaded workbook around the approved reference: grouped agent header, proportional inset/centered logos, blue section headers, compact spacing and nine policy columns. Added customer age at last birthday, insurance start dates and plan classifications. Every distinct date/classification is displayed, with continuation rows for unusually long lists and full source periods retained in the audit.
+- Added a blank **סיכום פגישה והמלצות** area for the agent to edit in Excel only. No UI recommendation fields, API input, persistence, or copied reference data. Existing local cancellation changes are preserved, including **ביטול פוליסה** instructions and state-specific notes.
+- Kept owner/coverage dropdown behavior, separate family/selected totals, monthly/annual separation and source history. Empty insurance sections and zero annual total rows no longer add visible clutter; calculations remain intact.
+- Verified all 38 backend tests and real browser downloads against Docker, including cancellation/restoration and RTL. Native Excel verified six insured selections, eight coverage selections, stable totals, no formula errors, summary editing and save/reopen. Inspected native print previews with synthetic data, including multiple dates/classifications. Reference files and generated previews stay outside Git and container images.
+- Rebuilt/recreated only API; web was left running. Local page/API endpoints returned HTTP 200. Updated AGENTS.md, README, contract and export regression checks. Pre-existing unrelated changes and untracked build directories were preserved.
+
+# Proposed cancellation and Excel instructions — 2026-10-10
+
+- On `main`, replaced **החרגה** with **ביטול** in proposed coverages; **שחזור** restores the saved edits, instructions and premium. Status/filter/source labels now describe cancellation. Existing coverages remain intact.
+- Active cancellation adds **ביטול פוליסה** under the Excel **הוראות הסוכן** column alongside manual notes, including when notes are empty. Restoration removes the generated instruction from later exports. Source notes stay unchanged; monthly/annual amounts and customer ownership remain separate.
+- Verified 29 backend tests, 33 frontend tests and the Docker production build. Synthetic proposal and real browser-download checks passed for cancellation/restoration, retained edits, separate/shared views, state-specific instructions, totals, RTL and refresh clearing.
+- Rebuilt and recreated API/web; both are running, API is healthy, and localhost page/API checks returned HTTP 200. Updated AGENTS.md, README and API contract. Existing untracked build directories were left untouched.
+
 # Windows installer 1.2.1 — 2026-10-05
 
 - Merged `main` through `5d0140a` into `feature/windows-installer`. Release tag: `v1.2.1-windows`. Main is unchanged.
